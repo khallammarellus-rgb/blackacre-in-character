@@ -1,0 +1,31 @@
+Fonts bundled with In Character
+===============================
+
+These fonts are not covered by the add-on's MIT license. Each belongs to its
+designer and is included unmodified, under the free terms its designer
+publishes. Thank you to every designer below.
+
+Freebooter (FREEBOOTERUPDATED.TTF)
+    Copyright GemFonts (Graham Meade), 1998. Free for personal and commercial use.
+
+Magic School One (MagicSchoolOne-ovYz.ttf)
+    Copyright (c) 2004 Michael Hagemann, FontMesa (www.fontmesa.com).
+    Free for personal and commercial use.
+
+Blackacre Khaz (BlackacreKhaz.ttf)
+Blackacre Highborne (BlackacreHighborne.ttf)
+Blackacre Highborne Text (BlackacreHighborneText.ttf)
+Blackacre Old Gilnean (BlackacreOldGilnean.ttf)
+Blackacre Learned Hand (BlackacreLearnedHand.ttf)
+Blackacre Peon (BlackacrePeon.ttf)
+Blackacre Tol'vir (BlackacreTolvir.ttf)
+    Made for In Character (Blackacre) and dedicated to the public domain under
+    CC0 1.0 Universal (https://creativecommons.org/publicdomain/zero/1.0/).
+    Not covered by the note at the top: anyone may use, change and
+    redistribute them for any purpose, and no credit is needed.
+
+The journal's other font choices (Friz, Morpheus, Skurri and the default)
+use the copies that come with World of Warcraft itself; none are bundled.
+
+If you designed one of these fonts and want it credited differently or
+removed, please open an issue on the project's GitHub page.

@@ -1,0 +1,33 @@
+## Interface: 120100
+## Title: In Character: |cffc9a227Journal|r
+## Notes: Your first-person journal, Quest Index, voice, honor rules and battle reports.
+## Version: 2.0.0-dev
+## Author: khallammarellus-rgb
+## RequiredDeps: Blackacre
+## Category-enUS: Roleplay
+
+UI\TomeHub.lua
+
+Data\YearCalendar.lua
+Data\TimelineEras.lua
+Data\AgeBands.lua
+Data\Birthpath.lua
+Data\HookTemplates.lua
+Data\QuestLines.lua
+Data\VoiceLexicon.lua
+Voice\Engine.lua
+
+Chronicle\Store.lua
+Chronicle\Hooks.lua
+Chronicle\Prompt.lua
+Chronicle\Capture.lua
+Chronicle\UI_Chronology.lua
+Chronicle\UI_Stickies.lua
+
+Quests\QuestLog.lua
+Quests\UI_QuestIndex.lua
+
+Hardcore\Monitor.lua
+PvP\AfterAction.lua
+
+Bootstrap.lua
