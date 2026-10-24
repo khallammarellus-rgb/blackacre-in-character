@@ -39,8 +39,18 @@ end
 
 local CHANNEL_NAME_LOWER = CHANNEL_NAME:lower()
 
+-- The chat filter asks this for every channel line; a player only sees a
+-- handful of distinct channel names, so each is lowered once.
+local channelMatchCache = {}
+
 local function ChannelNameMatch(name)
-    return name and name:lower() == CHANNEL_NAME_LOWER
+    if not name then return false end
+    local hit = channelMatchCache[name]
+    if hit == nil then
+        hit = name:lower() == CHANNEL_NAME_LOWER
+        channelMatchCache[name] = hit
+    end
+    return hit
 end
 
 local cachedChannelID
@@ -91,6 +101,41 @@ local function FilterBlackacreChat(_, _, msg, sender, language, _, _, _, _, _, c
     end
 end
 
+-- An add-on whisper to someone who just logged off makes the game print
+-- "No player named X is currently playing." Hide that line, but only for a
+-- name we whispered in the last few seconds, so the player's own typed
+-- whispers still get it. Keyed by the exact line, so the filter only looks up.
+local NOT_FOUND_HOLD = 5
+local notFoundLines = {} -- system line -> hide until (GetTime)
+local notFoundCount = 0
+
+local function ExpectNotFound(target)
+    if not target or not ERR_CHAT_PLAYER_NOT_FOUND_S then return end
+    local now = GetTime()
+    if notFoundCount > 50 then
+        for line, untilAt in pairs(notFoundLines) do
+            if untilAt < now then
+                notFoundLines[line] = nil
+                notFoundCount = notFoundCount - 1
+            end
+        end
+    end
+    local short = Ambiguate(target, "none")
+    for i = 1, 2 do
+        local line = ERR_CHAT_PLAYER_NOT_FOUND_S:format(i == 1 and target or short)
+        if not notFoundLines[line] then notFoundCount = notFoundCount + 1 end
+        notFoundLines[line] = now + NOT_FOUND_HOLD
+    end
+end
+
+local function FilterNotFound(_, _, msg)
+    if notFoundCount == 0 or (issecretvalue and issecretvalue(msg)) then return end
+    local untilAt = notFoundLines[msg]
+    if untilAt and GetTime() <= untilAt then
+        return true
+    end
+end
+
 local chatFilterInstalled
 local function InstallChatFilter()
     if chatFilterInstalled then return end
@@ -104,6 +149,7 @@ local function InstallChatFilter()
         addFilter("CHAT_MSG_CHANNEL_JOIN", FilterBlackacreChat)
         addFilter("CHAT_MSG_CHANNEL_LEAVE", FilterBlackacreChat)
         addFilter("CHAT_MSG_CHANNEL_NOTICE_USER", FilterBlackacreChat)
+        addFilter("CHAT_MSG_SYSTEM", FilterNotFound)
     end
 end
 
@@ -178,6 +224,7 @@ local function SendWhisper(target, message, _logged, prio)
     -- AceComm splits long payloads and sends them through ChatThrottleLib.
     -- There is no SendAddonMessageLogged on CTL; calling it errored every full bulletin.
     if not Blackacre.addon then return end
+    ExpectNotFound(target)
     Blackacre.addon:SendCommMessage(PREFIX, message, "WHISPER", target, prio or "NORMAL")
 end
 
@@ -347,6 +394,7 @@ local function PumpLogged()
         return
     end
     loggedBusy = true
+    if item.chatType == "WHISPER" then ExpectNotFound(item.target) end
     local ok, result = pcall(C_ChatInfo.SendAddonMessageLogged, PREFIX, item.msg, item.chatType, item.target)
     if ok and THROTTLED and result == THROTTLED then
         table.insert(loggedQueue, 1, item) -- try again after the throttle refills
@@ -987,6 +1035,10 @@ function Blackacre.Comms.OnCommReceived(prefix, message, distribution, sender)
     if decoded then
         if decoded.opcode == "NSZ" then
             AcceptBulletin(decoded, sender)
+        elseif decoded.opcode == "QT" then
+            if Blackacre.QuestText and Blackacre.QuestText.OnText then
+                Blackacre.QuestText.OnText(sender, decoded)
+            end
         elseif decoded.opcode == "IC_SUM" then
             if Blackacre.Share and Blackacre.Share.OnPeerSummary then
                 Blackacre.Share.OnPeerSummary(sender, decoded)
@@ -1008,6 +1060,10 @@ function Blackacre.Comms.OnCommReceived(prefix, message, distribution, sender)
         OnHello(fields[2])
     elseif opcode == "SQ" then
         Blackacre.Comms.SendSummaryTo(sender)
+    elseif opcode == "QW" then
+        if Blackacre.QuestText and Blackacre.QuestText.OnWant and fields[2] and fields[3] then
+            Blackacre.QuestText.OnWant(sender, fields[2], fields[3])
+        end
     elseif opcode == "BH" then
         OnBeaconHeartbeat(sender, fields)
     elseif opcode == "BZ" then
@@ -1042,6 +1098,22 @@ Blackacre.Comms.IngestBulletin = AcceptBulletin
 
 function Blackacre.Comms.SendChannelRaw(message, prio)
     return SendOnChannel(message, prio)
+end
+
+---------------------------------------------------------------------------
+-- Quest text between players (Tome's QuestText decides who and what).
+--   QW  "I'm missing the words for these quests": locale, comma-separated
+--       quest ids. Plain text whisper, one message.
+--   QT  one quest's words back, encoded: { opcode, loc, id, t, s, o, p, e }.
+--       BULK priority so it never crowds out anything else.
+---------------------------------------------------------------------------
+function Blackacre.Comms.SendQuestWant(target, locale, ids)
+    SendWhisper(target, "QW" .. SEP .. locale .. SEP .. ids, false, "BULK")
+end
+
+function Blackacre.Comms.SendQuestText(target, payload)
+    payload.opcode = "QT"
+    SendWhisper(target, EncodePayload(payload), false, "BULK")
 end
 
 function Blackacre.Comms.SendSummaryTo(target)

@@ -37,8 +37,9 @@ function Blackacre.MinAdultBirthADP()
 end
 
 -- Birth eras an adult today could come from: every era that began at least
--- 18 years before the present (Retail's present is 42 ADP, so the Third War
--- and everything before it). Rebuilt only when the present year changes.
+-- 18 years before the present (42 ADP in 2026, so the Third War and
+-- everything before it; the present moves with the calendar). Rebuilt only
+-- when the present year changes.
 local birthEras, birthErasFor
 function Blackacre.ListEras()
     local latest = Blackacre.MinAdultBirthADP()
@@ -59,8 +60,8 @@ function Blackacre.GetEraById(eraId)
     return nil
 end
 
---- The era a year falls in, across the whole timeline (the present year 42
---- is The War Within & after even though no adult is born in it).
+--- The era a year falls in, across the whole timeline (the present, 42 ADP
+--- in 2026, is The War Within & after even though no adult is born in it).
 function Blackacre.GetEraAtYear(yearADP)
     yearADP = tonumber(yearADP)
     if yearADP == nil then return nil end

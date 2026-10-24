@@ -78,6 +78,65 @@ local BY_MAP = {
     [23] = TAINTED, [1423] = TAINTED, -- Eastern Plaguelands
     [42] = TAINTED, [1430] = TAINTED, -- Deadwind Pass
     [77] = TAINTED, [1448] = TAINTED, -- Felwood
+
+    -- Retail's later lands (added 2026-10-09). Each climate follows the
+    -- zone's description on warcraft.wiki.gg (quoted in short below); map
+    -- ids are from the wiki's UiMapID list and, for The War Within and
+    -- Midnight, the live 12.1 UiMap table on wago.tools. A zone not listed
+    -- takes its continent's climate (the lookup walks up the parent maps),
+    -- or temperate. Temperate zones are listed only where their continent
+    -- has another climate. Zones with two faces (Gorgrond: desert and
+    -- jungle; the Waking Shores: lava and green) stay temperate.
+    [95] = TAINTED, -- Ghostlands: "a haunted, plagued, decrepit, and dangerous area"
+    -- Outland
+    [100] = ARID, -- Hellfire Peninsula: "a dry, barren wasteland"
+    [102] = TROPIC, -- Zangarmarsh: "a large expanse of swampland"
+    [104] = TAINTED, -- Shadowmoon Valley: "a tortured landscape boiling with the fury of fel"
+    [105] = ARID, -- Blade's Edge Mountains: "barren plateaus", "harsh winds"
+    [109] = TAINTED, -- Netherstorm: soil "that supports absolutely no plant life"
+    -- Northrend: "a frozen wasteland" (Grizzly Hills: "snow is everywhere";
+    -- Zul'Drak: "one of the most inhospitable climates on Azeroth")
+    [113] = TUNDRA,
+    [114] = TUNDRA, -- Borean Tundra: "wide, flat, and cold"
+    [115] = TUNDRA, -- Dragonblight: "a vast Arctic wasteland"
+    [117] = DEFAULT, -- Howling Fjord: green meadows, "a little milder"
+    [118] = TUNDRA, -- Icecrown: "dark and inescapably cold"
+    [119] = TROPIC, -- Sholazar Basin: "a tropical jungle basin"
+    [120] = TUNDRA, -- The Storm Peaks: "stone and ice"
+    [123] = TUNDRA, -- Wintergrasp: "a frozen valley"
+    [127] = DEFAULT, -- Crystalsong Forest: crystallized forest, not cold
+    -- Cataclysm
+    [249] = ARID, [1527] = ARID, -- Uldum: "predominately desert"
+    -- Pandaria
+    [371] = TROPIC, -- The Jade Forest: "a lush rainforest"
+    [418] = TROPIC, -- Krasarang Wilds: "thick and heavy with humidity"
+    [379] = TUNDRA, -- Kun-Lai Summit: "one of the coldest places in all of Pandaria"
+    [422] = TAINTED, -- Dread Wastes: "sha-corrupted soil"
+    [554] = TROPIC, -- Timeless Isle: flora "similar to that found in the Jade Forest"
+    -- Draenor
+    [525] = TUNDRA, -- Frostfire Ridge: "a harsh land of ceaseless winter"
+    [534] = TAINTED, -- Tanaan Jungle: jungle "corrupted when Gul'dan unleashed the Felblight"
+    -- Broken Isles and Argus
+    [641] = TAINTED, [1188] = TAINTED, -- Val'sharah: "a nightmare is spreading unchecked"
+    [646] = TAINTED, [1192] = TAINTED, -- Broken Shore: "rivers of fel magic"
+    [830] = TAINTED, -- Krokuun: "fel tainted groves", "black soil, devoid of life"
+    [885] = TAINTED, -- Antoran Wastes: "fully consumed by the fel"
+    -- Zandalar
+    [862] = TROPIC, [1193] = TROPIC, -- Zuldazar: "lush, tropical environments"
+    [863] = TROPIC, [1194] = TROPIC, -- Nazmir: "a fetid swamp"
+    [864] = ARID, [1195] = ARID, -- Vol'dun: "dunes of sand, salt flats"
+    -- Shadowlands
+    [1543] = TAINTED, [1960] = TAINTED, -- The Maw: "Wasteland of the Damned"
+    [1970] = ARID, -- Zereth Mortis: "a dry desert biome"
+    -- Dragon Isles
+    [2024] = TUNDRA, -- The Azure Span: "defined by its arctic climate"
+    [2133] = ARID, -- Zaralek Cavern: "the temperature within the cavern rise[s] significantly"
+    -- Khaz Algar
+    [2371] = ARID, -- K'aresh: "an arid planet"
+    -- Quel'Thalas (Midnight)
+    [2413] = TROPIC, -- Harandar: "a bioluminscent primordial jungle"
+    [2405] = TAINTED, -- Voidstorm: "a world shaped by the Void"
+    [2424] = TAINTED, [2432] = TAINTED, [2565] = TAINTED, -- Isle of Quel'Danas: the Darkwell's "corruption lingered"
 }
 
 -- Longer / more specific needles first.

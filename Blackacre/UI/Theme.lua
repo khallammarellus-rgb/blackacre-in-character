@@ -25,6 +25,9 @@ Blackacre.UI.Theme.Colors = {
     inkSoft = { 0.32, 0.33, 0.36 },
     gold = { 0.85, 0.70, 0.25 },
     parchment = { 0.92, 0.86, 0.72 },
+    -- Words on a Birthsign paper: the sign's name, then the ink of its text.
+    paperTitle = { 0.43, 0.12, 0.12 },
+    paperInk = { 0.23, 0.14, 0.08 },
     page = { 0.97, 0.93, 0.82 },
     pageFill = { 0.94, 0.88, 0.74 },
     edge = { 0.55, 0.42, 0.22 },
@@ -38,6 +41,19 @@ Blackacre.UI.Theme.Colors = {
     -- Tree nodes (family tree / Arc): passed-away grey, selection ring
     deceased = { 0.55, 0.55, 0.55 },
     highlight = { 1.00, 0.82, 0.00 },
+    -- Quest Index tooltip (owner, 2026-10-23): "Retired Quest" purple.
+    retiredQuest = { 0.64, 0.21, 0.93 },
+    -- Where borrowed quest text came from: warband blue, another player green.
+    textFromWarband = { 0.00, 0.80, 1.00 },
+    textFromPlayer = { 0.25, 0.78, 0.25 },
+    -- A family tree person's tooltip (owner, 2026-10-23): name gold, what
+    -- they are to me green, birth blue, Deceased red, Known/Rumored and
+    -- residence grey.
+    kinName = { 1.00, 0.82, 0.00 },
+    kinRelation = { 0.10, 1.00, 0.10 },
+    kinBorn = { 0.53, 0.67, 1.00 },
+    kinDeceased = { 1.00, 0.13, 0.13 },
+    kinDetail = { 0.62, 0.62, 0.62 },
 }
 
 Blackacre.UI.Theme.Seals = {
@@ -68,7 +84,7 @@ Blackacre.UI.Theme.Textures = {
     -- Blizzard_StatusUI.xml). An atlas name, not a file path.
     reportIconAtlas = "gmchat-icon-blizz",
     mapPinCursor = "Interface\\Cursor\\MapPinCursor",
-    mapPinCursorCross = "Interface\\Cursor\\Crosshairs\\MapPinCursor",
+    mapPinCursorCross = "Interface\\Cursor\\Crosshair\\MapPinCursor",
     commonIcons = "Interface\\Common\\CommonIcons",
     statusOffline = "Interface\\FriendsFrame\\StatusIcon-Offline",
     noteMenuIcon = "Interface\\GossipFrame\\HealerGossipIcon",
@@ -86,10 +102,19 @@ Blackacre.UI.Theme.Textures = {
     questBook = "Interface\\QuestFrame\\UI-QuestLog-BookIcon",
     stone = "Interface\\FrameGeneral\\UI-Background-Rock",
     marble = "Interface\\FrameGeneral\\UI-Background-Marble",
-    -- Quest Index base layer (owner TAV pull: FileID 8216846). Confirmed atlas
-    -- name via Blizzard_CharacterCreate / CharacterSelectListBackground.xml
-    -- (stretched full-bleed fill, no native atlas size).
-    questIndexBaseAtlas = "heavybronze-frame-background",
+    -- Window base layer for the Quest Index template (Quest Index, Beacon and
+    -- Bulletin editors, Yellow Pages, notice reader, My Postings, Backups).
+    -- Forever uses heavybronze-frame-background, which Retail doesn't have.
+    -- Owner's Retail pick (2026-10-15): the shop's teal map, 1612x914
+    -- (Interface/Shop/CatalogShopTempBGMapTeal), drawn cropped, never stretched.
+    questIndexBaseAtlas = "shop-bg-map-teal",
+    -- Tome shell base layer, under the book art (owner's pick, 2026-10-22): the
+    -- Islands queue backdrop (Interface/Scenarios/IslandsQueueBackground), one
+    -- picture, not a nine-slice, drawn cropped to the window, never stretched.
+    tomeShellFillAtlas = "islands-queue-background",
+    -- The TopHUD strips on the title bar (2F) and footer (11F) covered that
+    -- picture in flat grey (owner, 2026-10-22). Off; true brings them back.
+    bookBarStrips = false,
     white = "Interface\\Buttons\\WHITE8x8",
     -- Adventure Journal open-book (Shift+J)
     ejJournalBG = "Interface\\EncounterJournal\\UI-EJ-JournalBG",
@@ -128,7 +153,1518 @@ Blackacre.UI.Theme.Textures = {
     backstoryDividerAtlas = "UI-Journeys-Renown-divider",
     -- B4F tree viewport (Interface/MOTHER_TalentTree/MOTHERtalenttree), drawn rotated 90 degrees.
     treeBackgroundAtlas = "talenttree-mother-background",
+    -- Birthsign background (owner, 2026-10-15): the same Mother talent tree art,
+    -- upright this time. The atlas is the 356x443 picture inside the 512x512 file
+    -- (FileID 3166662), so the file's empty margin is never drawn.
+    birthsignBackgroundAtlas = "talenttree-mother-background",
     backstoryQuestLogAtlas = "QuestLog-frame",
+    -- Inner shadow over a shell window's base (owner pick, 2026-10-15): the
+    -- Flight Map's border vignette (Interface/AdventureMap/AdventureMapBorder;
+    -- Blizzard_FlightMap.xml stretches it inside a PortraitFrameTemplate).
+    shellVignetteAtlas = "AdventureMap_TopBorder",
+    -- Family tree lines (owner pick, 2026-10-15): the talent tree's arrow
+    -- lines (Interface/TalentFrame/TalentsArrowLine; names from
+    -- Blizzard_SharedTalentEdgeTemplates.lua), one per colour the player can pick.
+    treeLine = {
+        yellow = "talents-arrow-line-yellow",
+        gray = "talents-arrow-line-gray",
+        ghost = "talents-arrow-line-ghost",
+        red = "talents-arrow-line-red",
+        locked = "talents-arrow-line-locked",
+    },
+    -- Family tree people (owner picks, 2026-10-15), built like a talent node
+    -- (Blizzard_TalentButtonArt): a soft shadow behind, the face cut to shape,
+    -- then the frame, whose black inner band sits over the face's edge.
+    -- Frames by who they are: the player's ornate ring (Interface/TalentFrame/
+    -- TalentFrameAtlas), the talent tree's own gold and grey node rings for
+    -- known and rumored, the PvP talent octagon for someone passed (Talents).
+    -- `w`/`h` is the atlas box, `ring` how wide the visible ring or octagon is
+    -- inside it (measured from the art), so a frame is sized by what shows.
+    -- `face` and `shadowSize` are fractions of that visible width (Blizzard's
+    -- own proportions; the shadow sits behind at BACKGROUND); `dim` darkens
+    -- the face like a locked talent.
+    familyFrame = {
+        self = { atlas = "Talent-RingWithDot", w = 121, h = 120, ring = 91.5, face = 0.84,
+                 mask = "talents-node-circle-mask", shadow = "talents-node-circle-shadow", shadowSize = 1.25 },
+        known = { atlas = "talents-node-circle-yellow", w = 50, h = 50, ring = 50, face = 0.68,
+                  mask = "talents-node-circle-mask", shadow = "talents-node-circle-shadow", shadowSize = 1.52 },
+        rumored = { atlas = "talents-node-circle-gray", w = 50, h = 50, ring = 50, face = 0.68, dim = 0.75,
+                    mask = "talents-node-circle-mask", shadow = "talents-node-circle-shadow", shadowSize = 1.52 },
+        passed = { atlas = "talents-node-pvp-inspect", w = 116, h = 104, ring = 80, face = 0.86,
+                   mask = "talents-node-choice-mask", shadow = "talents-node-pvp-shadow", shadowSize = 1.95 },
+    },
+    -- Folders for picked faces (Backstory's FacePicks): icons, and pictures
+    -- like the Callings heads (Interface/Pictures/Callings-<covenant>-Head-*).
+    iconFolder = "Interface\\ICONS\\",
+    pictureFolder = "Interface\\Pictures\\",
+    -- A Callings head comes with its own ring: `circle` is that ring's width
+    -- as a share of the picture (121 of 256, measured), `raise` how far the
+    -- ring's centre sits above the picture's (4.5 of 256). It's drawn unmasked
+    -- over the frame, ring inside the face's space, so the head pops out.
+    facePicture = { circle = 0.473, raise = 0.0176 },
+    -- Faces until the player picks one (owner picks, 2026-10-15).
+    familyFace = {
+        known = "Interface\\ICONS\\Ability_Fixated_State_Yellow",
+        rumored = "Interface\\ICONS\\Ability_Fixated_State_Purple",
+        passed = "Interface\\ICONS\\Ability_Fixated_State_Red",
+    },
+    -- Header flourish behind a centered title (owner pick, 2026-10-15; the
+    -- scenario tracker's final-stage header, Interface/Scenarios/ScenarioEvergreen2x).
+    headerFlourish = "evergreen-scenario-trackerheader-final-filigree",
+    -- Inner panel (owner pick, 2026-10-15): the Garrison report's border
+    -- (Interface/Garrison/GarrisonLandingPage; layout from
+    -- Blizzard_GarrisonLandingPage.xml) with the follower frame as its fill.
+    -- Its corners are made for an 830 px window, so it's drawn at `scale`.
+    garrisonPanel = {
+        fill = "GarrLanding-FollowerFrame",
+        upperLeft = "GarrLanding-upperleft",
+        upperRight = "GarrLanding-upperright",
+        lowerLeft = "GarrLanding-lowerleft",
+        lowerRight = "GarrLanding-lowerright",
+        top = "GarrLanding-Top",
+        bottom = "GarLanding-Bottom",
+        left = "GarLanding-Left",
+        right = "GarLanding-Right",
+        scale = 0.5,
+        fillInset = 25, -- Blizzard insets its fill 25 inside the border (before scale)
+    },
+    -- Lineage era orb (L3): header orbs per birth era; eras not listed use default.
+    -- TAV-checked on Forever; Retail check owed (HANDOFF-RETAIL.md).
+    backstoryEraOrb = {
+        default = "UI-niffen-HeaderOrb-Level0",
+        dragon_age = "UI-Expedition-HeaderOrb-Level0",
+        troll_empires = "ui-rocket-headerorb-level0",
+        well_of_eternity = "ui-Karesh-headerorb-level0",
+        war_of_ancients = "UI-Valdrakken-HeaderOrb-Level0",
+        long_vigil = "UI-Dream-Headerorb-Level0",
+        highborne_exile = "ui-flame-headerorb-level0",
+        pre_portal = "ui-nightfall-headerorb-level0",
+        first_war = "ui-candle-headerorb-level0",
+        second_war = "UI-Tuskarr-HeaderOrb-Level0",
+        internment = "UI-Centaur-HeaderOrb-Level0",
+        rising_darkness = "ui-Karesh-headerorb-level0",
+        third_war = "UI-Tuskarr-HeaderOrb-Level0",
+    },
+    backstoryEraArrow = {
+        idle = "CovenantSanctum-Renown-Arrow",
+        hover = "CovenantSanctum-Renown-Arrow-Hover",
+        down = "CovenantSanctum-Renown-Arrow-Depressed",
+        off = "CovenantSanctum-Renown-Arrow-Disabled",
+    },
+    -- Birthsign page (docs/TREE-UI-RESEARCH.md, "Birthsign art plan"). Names from
+    -- Blizzard's Retail code; owner picked the sheets 2026-10-14.
+    birthsign = {
+        -- The same titans art across the whole tab, over the window's teal map
+        -- and under the sky and the picker (owner, 2026-10-21; Interface/Azerite/
+        -- HeartOfAzeroth, drawn ADD like Blizzard_AzeriteEssenceUI does).
+        backdrop = "heartofazeroth-animation-titans",
+        backdropAlpha = 0.7,
+        plateAlpha = 0.5, -- the sign's plate (owner, 2026-10-21: 50% solid)
+        paperPlateAlpha = 1, -- the plate when its sign has a paper (Textures.birthsignPaper)
+        plateMaskScale = 1, -- plateSoftMask's size over the part of the box the picture covers (1: the fade lands on its edges)
+        plateZoom = 0.85, -- every picture a little zoomed out (owner, 2026-10-22: too close)
+        backdropShiftX = 100, -- px the picture sits left of centre
+        backdropShiftY = 30, -- px the picture sits below centre
+        backdropScale = 0.9, -- of the size that just covers the window
+        stars = "heartofazeroth-animation-stars",
+        runesLarge = "ChallengeMode-Runes-Large",
+        runesSmall = "ChallengeMode-Runes-Small",
+        constellation = "heartofazeroth-animation-ring-constellation",
+        ring = "heartofazeroth-animation-ring",
+        orb = "heartofazeroth-orb-activated",
+        sunburst = "heartofazeroth-animation-Sunburst",
+        glowies = "heartofazeroth-animation-Glowies",
+        markGlow = "heartofazeroth-node-glow",
+    },
+    -- One class crest per sign for now (assigned at random, owner 2026-10-14);
+    -- later replaced by rune constellations.
+    birthsignCrest = {
+        naaru_ember = "talents-animations-class-demonhunter",
+        old_whisper = "talents-animations-class-druid",
+        first_pattern = "talents-animations-class-mage",
+        broken_wheel = "talents-animations-class-priest",
+        green_dreaming = "talents-animations-class-paladin",
+        long_silence = "talents-animations-class-warrior",
+        twisting_star = "talents-animations-class-shaman",
+        worldsouls_echo = "talents-animations-class-monk",
+        drifting_light = "talents-animations-class-hunter",
+        deep_current = "talents-animations-class-rogue",
+        ember_tide = "talents-animations-class-warlock",
+        waking_stone = "talents-animations-class-deathknight",
+    },
+    -- Plates: one picture laid from several separate BLP files side by side,
+    -- no nine-slice (Birthsign tab, owner 2026-10-21). `files` run left to
+    -- right, top to bottom, `cols` to a row, each `tile` px square (or as wide
+    -- as `colWidths` says, for a set whose last files are narrower); `crop` is
+    -- the picture's edge inside that grid, measured from the export.
+    -- Greymane Manor (Glues/Credits/Cataclysm): the credits painting is tiles
+    -- CR1 CR2 over CR5 CR6 of a 4 x 2 set; CR3/4/7/8 are only grey margin.
+    plates = {
+        greymane = {
+            cols = 2, tile = 256,
+            files = {
+                "Interface\\Glues\\Credits\\Cataclysm\\GREYMANE_MANOR01_CR1",
+                "Interface\\Glues\\Credits\\Cataclysm\\GREYMANE_MANOR01_CR2",
+                "Interface\\Glues\\Credits\\Cataclysm\\GREYMANE_MANOR01_CR5",
+                "Interface\\Glues\\Credits\\Cataclysm\\GREYMANE_MANOR01_CR6",
+            },
+            crop = { left = 98, top = 10, right = 397, bottom = 502 },
+            focusY = 0.37, -- cropped short, keep the manor and its lanterns in view
+        },
+        -- The rest are Glues/Credits paintings too, each a 4 x 2 set of 256 px
+        -- tiles; the owner picked the tiles (2026-10-22), crops measured.
+        demonChamber = { -- tiles 1-3 over 5-7; the right pedestal (tile 4/8) is left out
+            cols = 3, tile = 256,
+            files = {
+                "Interface\\Glues\\Credits\\Demon_Chamber1", "Interface\\Glues\\Credits\\Demon_Chamber2",
+                "Interface\\Glues\\Credits\\Demon_Chamber3", "Interface\\Glues\\Credits\\Demon_Chamber5",
+                "Interface\\Glues\\Credits\\Demon_Chamber6", "Interface\\Glues\\Credits\\Demon_Chamber7",
+            },
+            crop = { left = 0, top = 0, right = 768, bottom = 512 },
+        },
+        draeneiFemale = { -- tiles 1-3 over 5-7
+            cols = 3, tile = 256,
+            files = {
+                "Interface\\Glues\\Credits\\Draenei_Female1", "Interface\\Glues\\Credits\\Draenei_Female2",
+                "Interface\\Glues\\Credits\\Draenei_Female3", "Interface\\Glues\\Credits\\Draenei_Female5",
+                "Interface\\Glues\\Credits\\Draenei_Female6", "Interface\\Glues\\Credits\\Draenei_Female7",
+            },
+            crop = { left = 0, top = 0, right = 768, bottom = 512 },
+        },
+        powersource = { -- tiles 1-3 over 5-7: the painting's lower right runs into tile 7
+            cols = 3, tile = 256,
+            files = {
+                "Interface\\Glues\\Credits\\Powersource1", "Interface\\Glues\\Credits\\Powersource2",
+                "Interface\\Glues\\Credits\\Powersource3", "Interface\\Glues\\Credits\\Powersource5",
+                "Interface\\Glues\\Credits\\Powersource6", "Interface\\Glues\\Credits\\Powersource7",
+            },
+            crop = { left = 74, top = 0, right = 588, bottom = 512 },
+            focusY = 0.37, -- cropped short, keep the hourglass and its lightning
+        },
+        revenant = { -- Revanent21 22 over 25 26 (the file name's spelling); its frame's right edge is in 23/27
+            cols = 2, tile = 256,
+            files = {
+                "Interface\\Glues\\Credits\\Revanent21", "Interface\\Glues\\Credits\\Revanent22",
+                "Interface\\Glues\\Credits\\Revanent25", "Interface\\Glues\\Credits\\Revanent26",
+            },
+            crop = { left = 26, top = 25, right = 512, bottom = 489 },
+            focusY = 0.37, -- cropped short, keep the Revenant's head and shoulders
+        },
+        -- More Glues/Credits paintings (owner, 2026-10-22): seven months and the
+        -- custom sign's gallery. Crops measured; focusY keeps a figure's head in
+        -- view when the wide paper box cuts a tall painting short.
+        shadowmoon = { -- Warlords: all eight tiles
+            cols = 4, tile = 256,
+            files = {
+                "Interface\\Glues\\Credits\\Warlords\\Shadowmoon_Color_jlo1", "Interface\\Glues\\Credits\\Warlords\\Shadowmoon_Color_jlo2",
+                "Interface\\Glues\\Credits\\Warlords\\Shadowmoon_Color_jlo3", "Interface\\Glues\\Credits\\Warlords\\Shadowmoon_Color_jlo4",
+                "Interface\\Glues\\Credits\\Warlords\\Shadowmoon_Color_jlo5", "Interface\\Glues\\Credits\\Warlords\\Shadowmoon_Color_jlo6",
+                "Interface\\Glues\\Credits\\Warlords\\Shadowmoon_Color_jlo7", "Interface\\Glues\\Credits\\Warlords\\Shadowmoon_Color_jlo8",
+            },
+            crop = { left = 0, top = 0, right = 1024, bottom = 512 },
+        },
+        worgenHuman = { -- CATACLYSM: WORGEN_HUMAN_M031 032 over 035 036
+            cols = 2, tile = 256,
+            files = {
+                "Interface\\Glues\\Credits\\CATACLYSM\\WORGEN_HUMAN_M031", "Interface\\Glues\\Credits\\CATACLYSM\\WORGEN_HUMAN_M032",
+                "Interface\\Glues\\Credits\\CATACLYSM\\WORGEN_HUMAN_M035", "Interface\\Glues\\Credits\\CATACLYSM\\WORGEN_HUMAN_M036",
+            },
+            crop = { left = 40, top = 9, right = 335, bottom = 504 },
+            focusY = 0.15,
+        },
+        aegwynnsTower = { -- Legion: tiles 1 2 over 5 6
+            cols = 2, tile = 256,
+            files = {
+                "Interface\\Glues\\Credits\\Legion\\AegwynnsTower1", "Interface\\Glues\\Credits\\Legion\\AegwynnsTower2",
+                "Interface\\Glues\\Credits\\Legion\\AegwynnsTower5", "Interface\\Glues\\Credits\\Legion\\AegwynnsTower6",
+            },
+            crop = { left = 62, top = 15, right = 390, bottom = 461 },
+            focusY = 0.15,
+        },
+        nashalStatue = { -- Legion: tiles 1-3 over 5-7; the right edge fades to white
+            cols = 3, tile = 256,
+            files = {
+                "Interface\\Glues\\Credits\\Legion\\NashalStatue1", "Interface\\Glues\\Credits\\Legion\\NashalStatue2", "Interface\\Glues\\Credits\\Legion\\NashalStatue3",
+                "Interface\\Glues\\Credits\\Legion\\NashalStatue5", "Interface\\Glues\\Credits\\Legion\\NashalStatue6", "Interface\\Glues\\Credits\\Legion\\NashalStatue7",
+            },
+            crop = { left = 0, top = 0, right = 680, bottom = 512 },
+        },
+        forestSprite = { -- Pandaria: forestsprite021 022 over 025 026
+            cols = 2, tile = 256,
+            files = {
+                "Interface\\Glues\\Credits\\Pandaria\\forestsprite021", "Interface\\Glues\\Credits\\Pandaria\\forestsprite022",
+                "Interface\\Glues\\Credits\\Pandaria\\forestsprite025", "Interface\\Glues\\Credits\\Pandaria\\forestsprite026",
+            },
+            crop = { left = 0, top = 12, right = 368, bottom = 508 },
+            focusY = 0.3,
+        },
+        tidemother = { -- BattleforAzeroth: all eight tiles (Battle004_)
+            cols = 4, tile = 256,
+            files = {
+                "Interface\\Glues\\Credits\\BattleforAzeroth\\Battle004_1", "Interface\\Glues\\Credits\\BattleforAzeroth\\Battle004_2",
+                "Interface\\Glues\\Credits\\BattleforAzeroth\\Battle004_3", "Interface\\Glues\\Credits\\BattleforAzeroth\\Battle004_4",
+                "Interface\\Glues\\Credits\\BattleforAzeroth\\Battle004_5", "Interface\\Glues\\Credits\\BattleforAzeroth\\Battle004_6",
+                "Interface\\Glues\\Credits\\BattleforAzeroth\\Battle004_7", "Interface\\Glues\\Credits\\BattleforAzeroth\\Battle004_8",
+            },
+            crop = { left = 39, top = 112, right = 828, bottom = 400 },
+        },
+        owl = { -- Legion: tiles 1-3 over 5-7
+            cols = 3, tile = 256,
+            files = {
+                "Interface\\Glues\\Credits\\Legion\\Owl1", "Interface\\Glues\\Credits\\Legion\\Owl2", "Interface\\Glues\\Credits\\Legion\\Owl3",
+                "Interface\\Glues\\Credits\\Legion\\Owl5", "Interface\\Glues\\Credits\\Legion\\Owl6", "Interface\\Glues\\Credits\\Legion\\Owl7",
+            },
+            crop = { left = 0, top = 0, right = 624, bottom = 512 },
+        },
+        priestArmor = { -- Legion: tiles 2 3 over 6 7
+            cols = 2, tile = 256,
+            files = {
+                "Interface\\Glues\\Credits\\Legion\\PriestArmor2", "Interface\\Glues\\Credits\\Legion\\PriestArmor3",
+                "Interface\\Glues\\Credits\\Legion\\PriestArmor6", "Interface\\Glues\\Credits\\Legion\\PriestArmor7",
+            },
+            crop = { left = 0, top = 0, right = 458, bottom = 512 },
+            focusY = 0.3,
+        },
+        rogueArmor = { -- Legion: tiles 1 2 over 5 6
+            cols = 2, tile = 256,
+            files = {
+                "Interface\\Glues\\Credits\\Legion\\RogueArmor1", "Interface\\Glues\\Credits\\Legion\\RogueArmor2",
+                "Interface\\Glues\\Credits\\Legion\\RogueArmor5", "Interface\\Glues\\Credits\\Legion\\RogueArmor6",
+            },
+            crop = { left = 81, top = 6, right = 432, bottom = 504 },
+            focusY = 0.2,
+        },
+        satyr = { -- Legion: tiles 1 2 over 5 6
+            cols = 2, tile = 256,
+            files = {
+                "Interface\\Glues\\Credits\\Legion\\Satyr1", "Interface\\Glues\\Credits\\Legion\\Satyr2",
+                "Interface\\Glues\\Credits\\Legion\\Satyr5", "Interface\\Glues\\Credits\\Legion\\Satyr6",
+            },
+            crop = { left = 95, top = 14, right = 424, bottom = 501 },
+            focusY = 0.25,
+        },
+        seaGiant = { -- Legion: tiles 1 2 over 5 6
+            cols = 2, tile = 256,
+            files = {
+                "Interface\\Glues\\Credits\\Legion\\SeaGiant1", "Interface\\Glues\\Credits\\Legion\\SeaGiant2",
+                "Interface\\Glues\\Credits\\Legion\\SeaGiant5", "Interface\\Glues\\Credits\\Legion\\SeaGiant6",
+            },
+            crop = { left = 108, top = 9, right = 448, bottom = 506 },
+            focusY = 0.3,
+        },
+        seaGiantKing = { -- Legion: tiles 1-3 over 5-7
+            cols = 3, tile = 256,
+            files = {
+                "Interface\\Glues\\Credits\\Legion\\SeaGiantKing1", "Interface\\Glues\\Credits\\Legion\\SeaGiantKing2", "Interface\\Glues\\Credits\\Legion\\SeaGiantKing3",
+                "Interface\\Glues\\Credits\\Legion\\SeaGiantKing5", "Interface\\Glues\\Credits\\Legion\\SeaGiantKing6", "Interface\\Glues\\Credits\\Legion\\SeaGiantKing7",
+            },
+            crop = { left = 18, top = 22, right = 704, bottom = 495 },
+        },
+        shamanArmor = { -- Legion: tiles 2 3 over 6 7
+            cols = 2, tile = 256,
+            files = {
+                "Interface\\Glues\\Credits\\Legion\\ShamanArmor2", "Interface\\Glues\\Credits\\Legion\\ShamanArmor3",
+                "Interface\\Glues\\Credits\\Legion\\ShamanArmor6", "Interface\\Glues\\Credits\\Legion\\ShamanArmor7",
+            },
+            crop = { left = 0, top = 0, right = 404, bottom = 512 },
+            focusY = 0.3,
+        },
+        shamanMythicArmor = { -- Legion: tiles 1 2 over 5 6
+            cols = 2, tile = 256,
+            files = {
+                "Interface\\Glues\\Credits\\Legion\\ShamanMythicArmor1", "Interface\\Glues\\Credits\\Legion\\ShamanMythicArmor2",
+                "Interface\\Glues\\Credits\\Legion\\ShamanMythicArmor5", "Interface\\Glues\\Credits\\Legion\\ShamanMythicArmor6",
+            },
+            crop = { left = 65, top = 0, right = 451, bottom = 511 },
+            focusY = 0.2,
+        },
+        battle005 = { -- BattleforAzeroth: tiles 1 2 over 5 6
+            cols = 2, tile = 256,
+            files = {
+                "Interface\\Glues\\Credits\\BattleforAzeroth\\Battle005_1", "Interface\\Glues\\Credits\\BattleforAzeroth\\Battle005_2",
+                "Interface\\Glues\\Credits\\BattleforAzeroth\\Battle005_5", "Interface\\Glues\\Credits\\BattleforAzeroth\\Battle005_6",
+            },
+            crop = { left = 12, top = 133, right = 418, bottom = 449 },
+        },
+        battle006 = { -- BattleforAzeroth: tiles 1-3 over 5-7
+            cols = 3, tile = 256,
+            files = {
+                "Interface\\Glues\\Credits\\BattleforAzeroth\\Battle006_1", "Interface\\Glues\\Credits\\BattleforAzeroth\\Battle006_2", "Interface\\Glues\\Credits\\BattleforAzeroth\\Battle006_3",
+                "Interface\\Glues\\Credits\\BattleforAzeroth\\Battle006_5", "Interface\\Glues\\Credits\\BattleforAzeroth\\Battle006_6", "Interface\\Glues\\Credits\\BattleforAzeroth\\Battle006_7",
+            },
+            crop = { left = 0, top = 0, right = 659, bottom = 512 },
+        },
+        battle027 = { -- BattleforAzeroth: tiles 1-3 over 5-7
+            cols = 3, tile = 256,
+            files = {
+                "Interface\\Glues\\Credits\\BattleforAzeroth\\Battle027_1", "Interface\\Glues\\Credits\\BattleforAzeroth\\Battle027_2", "Interface\\Glues\\Credits\\BattleforAzeroth\\Battle027_3",
+                "Interface\\Glues\\Credits\\BattleforAzeroth\\Battle027_5", "Interface\\Glues\\Credits\\BattleforAzeroth\\Battle027_6", "Interface\\Glues\\Credits\\BattleforAzeroth\\Battle027_7",
+            },
+            crop = { left = 210, top = 0, right = 549, bottom = 512 },
+            focusY = 0.3,
+        },
+        battle028 = { -- BattleforAzeroth: tiles 1-3 over 5-7
+            cols = 3, tile = 256,
+            files = {
+                "Interface\\Glues\\Credits\\BattleforAzeroth\\Battle028_1", "Interface\\Glues\\Credits\\BattleforAzeroth\\Battle028_2", "Interface\\Glues\\Credits\\BattleforAzeroth\\Battle028_3",
+                "Interface\\Glues\\Credits\\BattleforAzeroth\\Battle028_5", "Interface\\Glues\\Credits\\BattleforAzeroth\\Battle028_6", "Interface\\Glues\\Credits\\BattleforAzeroth\\Battle028_7",
+            },
+            crop = { left = 132, top = 0, right = 567, bottom = 512 },
+            focusY = 0.25,
+        },
+        battle033 = { -- BattleforAzeroth: tiles 1-3 over 5-7
+            cols = 3, tile = 256,
+            files = {
+                "Interface\\Glues\\Credits\\BattleforAzeroth\\Battle033_1", "Interface\\Glues\\Credits\\BattleforAzeroth\\Battle033_2", "Interface\\Glues\\Credits\\BattleforAzeroth\\Battle033_3",
+                "Interface\\Glues\\Credits\\BattleforAzeroth\\Battle033_5", "Interface\\Glues\\Credits\\BattleforAzeroth\\Battle033_6", "Interface\\Glues\\Credits\\BattleforAzeroth\\Battle033_7",
+            },
+            crop = { left = 48, top = 35, right = 632, bottom = 488 },
+        },
+        battle034 = { -- BattleforAzeroth: tiles 1-3 over 5-7
+            cols = 3, tile = 256,
+            files = {
+                "Interface\\Glues\\Credits\\BattleforAzeroth\\Battle034_1", "Interface\\Glues\\Credits\\BattleforAzeroth\\Battle034_2", "Interface\\Glues\\Credits\\BattleforAzeroth\\Battle034_3",
+                "Interface\\Glues\\Credits\\BattleforAzeroth\\Battle034_5", "Interface\\Glues\\Credits\\BattleforAzeroth\\Battle034_6", "Interface\\Glues\\Credits\\BattleforAzeroth\\Battle034_7",
+            },
+            crop = { left = 0, top = 0, right = 718, bottom = 512 },
+        },
+        battle035 = { -- BattleforAzeroth: tiles 1-3 over 5-7
+            cols = 3, tile = 256,
+            files = {
+                "Interface\\Glues\\Credits\\BattleforAzeroth\\Battle035_1", "Interface\\Glues\\Credits\\BattleforAzeroth\\Battle035_2", "Interface\\Glues\\Credits\\BattleforAzeroth\\Battle035_3",
+                "Interface\\Glues\\Credits\\BattleforAzeroth\\Battle035_5", "Interface\\Glues\\Credits\\BattleforAzeroth\\Battle035_6", "Interface\\Glues\\Credits\\BattleforAzeroth\\Battle035_7",
+            },
+            crop = { left = 42, top = 25, right = 663, bottom = 496 },
+        },
+        battle036 = { -- BattleforAzeroth: tiles 1-3 over 5-7
+            cols = 3, tile = 256,
+            files = {
+                "Interface\\Glues\\Credits\\BattleforAzeroth\\Battle036_1", "Interface\\Glues\\Credits\\BattleforAzeroth\\Battle036_2", "Interface\\Glues\\Credits\\BattleforAzeroth\\Battle036_3",
+                "Interface\\Glues\\Credits\\BattleforAzeroth\\Battle036_5", "Interface\\Glues\\Credits\\BattleforAzeroth\\Battle036_6", "Interface\\Glues\\Credits\\BattleforAzeroth\\Battle036_7",
+            },
+            crop = { left = 29, top = 0, right = 613, bottom = 512 },
+            focusY = 0.3,
+        },
+        -- The custom gallery's second list (owner, 2026-10-22). Grids follow
+        -- Blizzard's credits table (CREDITS_ART_INFO): eight files are 4 x 2, six
+        -- are 3 x 2, four are 2 x 2. Crops measured; tall figures keep their
+        -- upper part in view (focusY 0.3).
+        battle037 = { -- BattleforAzeroth: Battle037_ 1,2,3,5,6,7
+            cols = 3, tile = 256,
+            files = {
+                "Interface\\Glues\\Credits\\BattleforAzeroth\\Battle037_1", "Interface\\Glues\\Credits\\BattleforAzeroth\\Battle037_2", "Interface\\Glues\\Credits\\BattleforAzeroth\\Battle037_3",
+                "Interface\\Glues\\Credits\\BattleforAzeroth\\Battle037_5", "Interface\\Glues\\Credits\\BattleforAzeroth\\Battle037_6", "Interface\\Glues\\Credits\\BattleforAzeroth\\Battle037_7",
+            },
+            crop = { left = 202, top = 0, right = 539, bottom = 512 },
+            focusY = 0.3,
+        },
+        battle038 = { -- BattleforAzeroth: Battle038_ 1,2,3,5,6,7
+            cols = 3, tile = 256,
+            files = {
+                "Interface\\Glues\\Credits\\BattleforAzeroth\\Battle038_1", "Interface\\Glues\\Credits\\BattleforAzeroth\\Battle038_2", "Interface\\Glues\\Credits\\BattleforAzeroth\\Battle038_3",
+                "Interface\\Glues\\Credits\\BattleforAzeroth\\Battle038_5", "Interface\\Glues\\Credits\\BattleforAzeroth\\Battle038_6", "Interface\\Glues\\Credits\\BattleforAzeroth\\Battle038_7",
+            },
+            crop = { left = 142, top = 0, right = 623, bottom = 512 },
+            focusY = 0.3,
+        },
+        camel01 = { -- CATACLYSM: CAMEL_01 1,2,5,6
+            cols = 2, tile = 256,
+            files = {
+                "Interface\\Glues\\Credits\\CATACLYSM\\CAMEL_011", "Interface\\Glues\\Credits\\CATACLYSM\\CAMEL_012",
+                "Interface\\Glues\\Credits\\CATACLYSM\\CAMEL_015", "Interface\\Glues\\Credits\\CATACLYSM\\CAMEL_016",
+            },
+            crop = { left = 28, top = 14, right = 492, bottom = 501 },
+            focusY = 0.3,
+        },
+        chimera01 = { -- CATACLYSM: CHIMERA01 1,2,3,5,6,7
+            cols = 3, tile = 256,
+            files = {
+                "Interface\\Glues\\Credits\\CATACLYSM\\CHIMERA011", "Interface\\Glues\\Credits\\CATACLYSM\\CHIMERA012", "Interface\\Glues\\Credits\\CATACLYSM\\CHIMERA013",
+                "Interface\\Glues\\Credits\\CATACLYSM\\CHIMERA015", "Interface\\Glues\\Credits\\CATACLYSM\\CHIMERA016", "Interface\\Glues\\Credits\\CATACLYSM\\CHIMERA017",
+            },
+            crop = { left = 57, top = 49, right = 593, bottom = 480 },
+        },
+        dbTurtledragon = { -- CATACLYSM: DB_TURTLEDRAGON 1,2,3,5,6,7
+            cols = 3, tile = 256,
+            files = {
+                "Interface\\Glues\\Credits\\CATACLYSM\\DB_TURTLEDRAGON1", "Interface\\Glues\\Credits\\CATACLYSM\\DB_TURTLEDRAGON2", "Interface\\Glues\\Credits\\CATACLYSM\\DB_TURTLEDRAGON3",
+                "Interface\\Glues\\Credits\\CATACLYSM\\DB_TURTLEDRAGON5", "Interface\\Glues\\Credits\\CATACLYSM\\DB_TURTLEDRAGON6", "Interface\\Glues\\Credits\\CATACLYSM\\DB_TURTLEDRAGON7",
+            },
+            crop = { left = 25, top = 4, right = 552, bottom = 503 },
+            focusY = 0.3,
+        },
+        firelandsGorge01 = { -- CATACLYSM: FIRELANDS GORGE01 1,2,5,6
+            cols = 2, tile = 256,
+            files = {
+                "Interface\\Glues\\Credits\\CATACLYSM\\FIRELANDS GORGE011", "Interface\\Glues\\Credits\\CATACLYSM\\FIRELANDS GORGE012",
+                "Interface\\Glues\\Credits\\CATACLYSM\\FIRELANDS GORGE015", "Interface\\Glues\\Credits\\CATACLYSM\\FIRELANDS GORGE016",
+            },
+            crop = { left = 27, top = 11, right = 465, bottom = 499 },
+            focusY = 0.3,
+        },
+        goblinPhysiqueM03 = { -- CATACLYSM: GOBLIN_PHYSIQUE_M03 1,2,5,6
+            cols = 2, tile = 256,
+            files = {
+                "Interface\\Glues\\Credits\\CATACLYSM\\GOBLIN_PHYSIQUE_M031", "Interface\\Glues\\Credits\\CATACLYSM\\GOBLIN_PHYSIQUE_M032",
+                "Interface\\Glues\\Credits\\CATACLYSM\\GOBLIN_PHYSIQUE_M035", "Interface\\Glues\\Credits\\CATACLYSM\\GOBLIN_PHYSIQUE_M036",
+            },
+            crop = { left = 76, top = 13, right = 512, bottom = 504 },
+            focusY = 0.3,
+        },
+        lesserelementalEarth02a = { -- CATACLYSM: LESSERELEMENTAL_EARTH_02A 1,2,5,6
+            cols = 2, tile = 256,
+            files = {
+                "Interface\\Glues\\Credits\\CATACLYSM\\LESSERELEMENTAL_EARTH_02A1", "Interface\\Glues\\Credits\\CATACLYSM\\LESSERELEMENTAL_EARTH_02A2",
+                "Interface\\Glues\\Credits\\CATACLYSM\\LESSERELEMENTAL_EARTH_02A5", "Interface\\Glues\\Credits\\CATACLYSM\\LESSERELEMENTAL_EARTH_02A6",
+            },
+            crop = { left = 43, top = 10, right = 427, bottom = 501 },
+            focusY = 0.3,
+        },
+        lesserelementalFire03b = { -- CATACLYSM: LESSERELEMENTAL_FIRE_03B 1,2,5,6
+            cols = 2, tile = 256,
+            files = {
+                "Interface\\Glues\\Credits\\CATACLYSM\\LESSERELEMENTAL_FIRE_03B1", "Interface\\Glues\\Credits\\CATACLYSM\\LESSERELEMENTAL_FIRE_03B2",
+                "Interface\\Glues\\Credits\\CATACLYSM\\LESSERELEMENTAL_FIRE_03B5", "Interface\\Glues\\Credits\\CATACLYSM\\LESSERELEMENTAL_FIRE_03B6",
+            },
+            crop = { left = 44, top = 10, right = 420, bottom = 502 },
+            focusY = 0.3,
+        },
+        shapelessColor01 = { -- CATACLYSM: SHAPELESS_COLOR01 1,2,5,6
+            cols = 2, tile = 256,
+            files = {
+                "Interface\\Glues\\Credits\\CATACLYSM\\SHAPELESS_COLOR011", "Interface\\Glues\\Credits\\CATACLYSM\\SHAPELESS_COLOR012",
+                "Interface\\Glues\\Credits\\CATACLYSM\\SHAPELESS_COLOR015", "Interface\\Glues\\Credits\\CATACLYSM\\SHAPELESS_COLOR016",
+            },
+            crop = { left = 61, top = 36, right = 512, bottom = 477 },
+            focusY = 0.3,
+        },
+        skardyn02 = { -- CATACLYSM: SKARDYN02 1,2,5,6
+            cols = 2, tile = 256,
+            files = {
+                "Interface\\Glues\\Credits\\CATACLYSM\\SKARDYN021", "Interface\\Glues\\Credits\\CATACLYSM\\SKARDYN022",
+                "Interface\\Glues\\Credits\\CATACLYSM\\SKARDYN025", "Interface\\Glues\\Credits\\CATACLYSM\\SKARDYN026",
+            },
+            crop = { left = 50, top = 15, right = 512, bottom = 499 },
+            focusY = 0.3,
+        },
+        tier11Hunter01 = { -- CATACLYSM: TIER11_HUNTER01 1,2,5,6
+            cols = 2, tile = 256,
+            files = {
+                "Interface\\Glues\\Credits\\CATACLYSM\\TIER11_HUNTER011", "Interface\\Glues\\Credits\\CATACLYSM\\TIER11_HUNTER012",
+                "Interface\\Glues\\Credits\\CATACLYSM\\TIER11_HUNTER015", "Interface\\Glues\\Credits\\CATACLYSM\\TIER11_HUNTER016",
+            },
+            crop = { left = 111, top = 15, right = 454, bottom = 501 },
+            focusY = 0.3,
+        },
+        tier11Warrior01 = { -- CATACLYSM: TIER11_WARRIOR01 1,2,5,6
+            cols = 2, tile = 256,
+            files = {
+                "Interface\\Glues\\Credits\\CATACLYSM\\TIER11_WARRIOR011", "Interface\\Glues\\Credits\\CATACLYSM\\TIER11_WARRIOR012",
+                "Interface\\Glues\\Credits\\CATACLYSM\\TIER11_WARRIOR015", "Interface\\Glues\\Credits\\CATACLYSM\\TIER11_WARRIOR016",
+            },
+            crop = { left = 102, top = 6, right = 425, bottom = 503 },
+            focusY = 0.3,
+        },
+        twilghtAscendant01a = { -- CATACLYSM: TWILGHT ASCENDANT01A 1,2,5,6 (Blizzard spells it TWILGHT)
+            cols = 2, tile = 256,
+            files = {
+                "Interface\\Glues\\Credits\\CATACLYSM\\TWILGHT ASCENDANT01A1", "Interface\\Glues\\Credits\\CATACLYSM\\TWILGHT ASCENDANT01A2",
+                "Interface\\Glues\\Credits\\CATACLYSM\\TWILGHT ASCENDANT01A5", "Interface\\Glues\\Credits\\CATACLYSM\\TWILGHT ASCENDANT01A6",
+            },
+            crop = { left = 74, top = 8, right = 491, bottom = 505 },
+            focusY = 0.3,
+        },
+        twilightsHammerBuildings07 = { -- CATACLYSM: TWILIGHTS HAMMER BUILDINGS07 1,2,5,6
+            cols = 2, tile = 256,
+            files = {
+                "Interface\\Glues\\Credits\\CATACLYSM\\TWILIGHTS HAMMER BUILDINGS071", "Interface\\Glues\\Credits\\CATACLYSM\\TWILIGHTS HAMMER BUILDINGS072",
+                "Interface\\Glues\\Credits\\CATACLYSM\\TWILIGHTS HAMMER BUILDINGS075", "Interface\\Glues\\Credits\\CATACLYSM\\TWILIGHTS HAMMER BUILDINGS076",
+            },
+            crop = { left = 56, top = 10, right = 510, bottom = 497 },
+            focusY = 0.3,
+        },
+        uldumSphinx01 = { -- CATACLYSM: ULDUM SPHINX01 1,2,5,6
+            cols = 2, tile = 256,
+            files = {
+                "Interface\\Glues\\Credits\\CATACLYSM\\ULDUM SPHINX011", "Interface\\Glues\\Credits\\CATACLYSM\\ULDUM SPHINX012",
+                "Interface\\Glues\\Credits\\CATACLYSM\\ULDUM SPHINX015", "Interface\\Glues\\Credits\\CATACLYSM\\ULDUM SPHINX016",
+            },
+            crop = { left = 31, top = 9, right = 512, bottom = 497 },
+            focusY = 0.3,
+        },
+        uldumtolvir1 = { -- CATACLYSM: ULDUMTOLVIR1 1,2,3,5,6,7
+            cols = 3, tile = 256,
+            files = {
+                "Interface\\Glues\\Credits\\CATACLYSM\\ULDUMTOLVIR11", "Interface\\Glues\\Credits\\CATACLYSM\\ULDUMTOLVIR12", "Interface\\Glues\\Credits\\CATACLYSM\\ULDUMTOLVIR13",
+                "Interface\\Glues\\Credits\\CATACLYSM\\ULDUMTOLVIR15", "Interface\\Glues\\Credits\\CATACLYSM\\ULDUMTOLVIR16", "Interface\\Glues\\Credits\\CATACLYSM\\ULDUMTOLVIR17",
+            },
+            crop = { left = 17, top = 38, right = 728, bottom = 472 },
+        },
+        challengeRogueNotused = { -- Pandaria: challenge_rogue_notused 1,5
+            cols = 1, tile = 256,
+            files = {
+                "Interface\\Glues\\Credits\\Pandaria\\challenge_rogue_notused1",
+                "Interface\\Glues\\Credits\\Pandaria\\challenge_rogue_notused5",
+            },
+            crop = { left = 0, top = 37, right = 256, bottom = 512 },
+            focusY = 0.3,
+        },
+        challengeRogueNotusedPart2 = { -- Pandaria: challenge_rogue_notused 2,3,6,7
+            cols = 2, tile = 256,
+            files = {
+                "Interface\\Glues\\Credits\\Pandaria\\challenge_rogue_notused2", "Interface\\Glues\\Credits\\Pandaria\\challenge_rogue_notused3",
+                "Interface\\Glues\\Credits\\Pandaria\\challenge_rogue_notused6", "Interface\\Glues\\Credits\\Pandaria\\challenge_rogue_notused7",
+            },
+            crop = { left = 0, top = 0, right = 336, bottom = 256 },
+        },
+        challengeRogue = { -- Pandaria: challenge_rogue 1,5
+            cols = 1, tile = 256,
+            files = {
+                "Interface\\Glues\\Credits\\Pandaria\\challenge_rogue1",
+                "Interface\\Glues\\Credits\\Pandaria\\challenge_rogue5",
+            },
+            crop = { left = 32, top = 44, right = 256, bottom = 503 },
+            focusY = 0.3,
+        },
+        challengeRoguePart2 = { -- Pandaria: challenge_rogue 2,3,6,7
+            cols = 2, tile = 256,
+            files = {
+                "Interface\\Glues\\Credits\\Pandaria\\challenge_rogue2", "Interface\\Glues\\Credits\\Pandaria\\challenge_rogue3",
+                "Interface\\Glues\\Credits\\Pandaria\\challenge_rogue6", "Interface\\Glues\\Credits\\Pandaria\\challenge_rogue7",
+            },
+            crop = { left = 0, top = 50, right = 332, bottom = 499 },
+            focusY = 0.3,
+        },
+        crane01 = { -- Pandaria: crane01 1,2,5,6
+            cols = 2, tile = 256,
+            files = {
+                "Interface\\Glues\\Credits\\Pandaria\\crane011", "Interface\\Glues\\Credits\\Pandaria\\crane012",
+                "Interface\\Glues\\Credits\\Pandaria\\crane015", "Interface\\Glues\\Credits\\Pandaria\\crane016",
+            },
+            crop = { left = 9, top = 6, right = 396, bottom = 503 },
+            focusY = 0.3,
+        },
+        druidChallenge = { -- Pandaria: DruidChallenge 1,2,5,6
+            cols = 2, tile = 256,
+            files = {
+                "Interface\\Glues\\Credits\\Pandaria\\DruidChallenge1", "Interface\\Glues\\Credits\\Pandaria\\DruidChallenge2",
+                "Interface\\Glues\\Credits\\Pandaria\\DruidChallenge5", "Interface\\Glues\\Credits\\Pandaria\\DruidChallenge6",
+            },
+            crop = { left = 42, top = 20, right = 406, bottom = 491 },
+            focusY = 0.3,
+        },
+        femalePandaren = { -- Pandaria: Female_Pandaren 1,2,5,6
+            cols = 2, tile = 256,
+            files = {
+                "Interface\\Glues\\Credits\\Pandaria\\Female_Pandaren1", "Interface\\Glues\\Credits\\Pandaria\\Female_Pandaren2",
+                "Interface\\Glues\\Credits\\Pandaria\\Female_Pandaren5", "Interface\\Glues\\Credits\\Pandaria\\Female_Pandaren6",
+            },
+            crop = { left = 5, top = 4, right = 285, bottom = 507 },
+            focusY = 0.3,
+        },
+        foodog002b = { -- Pandaria: foodog_002b 1,2,5,6
+            cols = 2, tile = 256,
+            files = {
+                "Interface\\Glues\\Credits\\Pandaria\\foodog_002b1", "Interface\\Glues\\Credits\\Pandaria\\foodog_002b2",
+                "Interface\\Glues\\Credits\\Pandaria\\foodog_002b5", "Interface\\Glues\\Credits\\Pandaria\\foodog_002b6",
+            },
+            crop = { left = 8, top = 7, right = 390, bottom = 506 },
+            focusY = 0.3,
+        },
+        foodogCreature = { -- Pandaria: foodog_creature 1,2,3,5,6,7
+            cols = 3, tile = 256,
+            files = {
+                "Interface\\Glues\\Credits\\Pandaria\\foodog_creature1", "Interface\\Glues\\Credits\\Pandaria\\foodog_creature2", "Interface\\Glues\\Credits\\Pandaria\\foodog_creature3",
+                "Interface\\Glues\\Credits\\Pandaria\\foodog_creature5", "Interface\\Glues\\Credits\\Pandaria\\foodog_creature6", "Interface\\Glues\\Credits\\Pandaria\\foodog_creature7",
+            },
+            crop = { left = 22, top = 0, right = 768, bottom = 512 },
+        },
+        hordePandaren = { -- Pandaria: horde pandaren 1,2,5,6
+            cols = 2, tile = 256,
+            files = {
+                "Interface\\Glues\\Credits\\Pandaria\\horde pandaren1", "Interface\\Glues\\Credits\\Pandaria\\horde pandaren2",
+                "Interface\\Glues\\Credits\\Pandaria\\horde pandaren5", "Interface\\Glues\\Credits\\Pandaria\\horde pandaren6",
+            },
+            crop = { left = 6, top = 6, right = 512, bottom = 506 },
+            focusY = 0.3,
+        },
+        koi03 = { -- Pandaria: koi_03 1,2,5,6
+            cols = 2, tile = 256,
+            files = {
+                "Interface\\Glues\\Credits\\Pandaria\\koi_031", "Interface\\Glues\\Credits\\Pandaria\\koi_032",
+                "Interface\\Glues\\Credits\\Pandaria\\koi_035", "Interface\\Glues\\Credits\\Pandaria\\koi_036",
+            },
+            crop = { left = 65, top = 20, right = 432, bottom = 499 },
+            focusY = 0.3,
+        },
+        koiman01 = { -- Pandaria: koiman01 1,2,5,6
+            cols = 2, tile = 256,
+            files = {
+                "Interface\\Glues\\Credits\\Pandaria\\koiman011", "Interface\\Glues\\Credits\\Pandaria\\koiman012",
+                "Interface\\Glues\\Credits\\Pandaria\\koiman015", "Interface\\Glues\\Credits\\Pandaria\\koiman016",
+            },
+            crop = { left = 30, top = 40, right = 476, bottom = 512 },
+            focusY = 0.3,
+        },
+        lionMan = { -- Pandaria: LionMan 1,2,3,5,6,7
+            cols = 3, tile = 256,
+            files = {
+                "Interface\\Glues\\Credits\\Pandaria\\LionMan1", "Interface\\Glues\\Credits\\Pandaria\\LionMan2", "Interface\\Glues\\Credits\\Pandaria\\LionMan3",
+                "Interface\\Glues\\Credits\\Pandaria\\LionMan5", "Interface\\Glues\\Credits\\Pandaria\\LionMan6", "Interface\\Glues\\Credits\\Pandaria\\LionMan7",
+            },
+            crop = { left = 77, top = 19, right = 649, bottom = 491 },
+        },
+        mantis01 = { -- Pandaria: Mantis_01 1,2,5,6
+            cols = 2, tile = 256,
+            files = {
+                "Interface\\Glues\\Credits\\Pandaria\\Mantis_011", "Interface\\Glues\\Credits\\Pandaria\\Mantis_012",
+                "Interface\\Glues\\Credits\\Pandaria\\Mantis_015", "Interface\\Glues\\Credits\\Pandaria\\Mantis_016",
+            },
+            crop = { left = 24, top = 16, right = 512, bottom = 497 },
+            focusY = 0.3,
+        },
+        mantis04 = { -- Pandaria: Mantis_04 1,2,5,6
+            cols = 2, tile = 256,
+            files = {
+                "Interface\\Glues\\Credits\\Pandaria\\Mantis_041", "Interface\\Glues\\Credits\\Pandaria\\Mantis_042",
+                "Interface\\Glues\\Credits\\Pandaria\\Mantis_045", "Interface\\Glues\\Credits\\Pandaria\\Mantis_046",
+            },
+            crop = { left = 56, top = 21, right = 476, bottom = 508 },
+            focusY = 0.3,
+        },
+        moguBossConceptNew = { -- Pandaria: Mogu_BossConcept_New 1,2,3,5,6,7
+            cols = 3, tile = 256,
+            files = {
+                "Interface\\Glues\\Credits\\Pandaria\\Mogu_BossConcept_New1", "Interface\\Glues\\Credits\\Pandaria\\Mogu_BossConcept_New2", "Interface\\Glues\\Credits\\Pandaria\\Mogu_BossConcept_New3",
+                "Interface\\Glues\\Credits\\Pandaria\\Mogu_BossConcept_New5", "Interface\\Glues\\Credits\\Pandaria\\Mogu_BossConcept_New6", "Interface\\Glues\\Credits\\Pandaria\\Mogu_BossConcept_New7",
+            },
+            crop = { left = 0, top = 4, right = 754, bottom = 512 },
+        },
+        moguMonkConcept = { -- Pandaria: Mogu_Monk_Concept 1,2,5,6
+            cols = 2, tile = 256,
+            files = {
+                "Interface\\Glues\\Credits\\Pandaria\\Mogu_Monk_Concept1", "Interface\\Glues\\Credits\\Pandaria\\Mogu_Monk_Concept2",
+                "Interface\\Glues\\Credits\\Pandaria\\Mogu_Monk_Concept5", "Interface\\Glues\\Credits\\Pandaria\\Mogu_Monk_Concept6",
+            },
+            crop = { left = 0, top = 0, right = 422, bottom = 512 },
+            focusY = 0.3,
+        },
+        monkey01 = { -- Pandaria: Monkey_01 1,2,5,6
+            cols = 2, tile = 256,
+            files = {
+                "Interface\\Glues\\Credits\\Pandaria\\Monkey_011", "Interface\\Glues\\Credits\\Pandaria\\Monkey_012",
+                "Interface\\Glues\\Credits\\Pandaria\\Monkey_015", "Interface\\Glues\\Credits\\Pandaria\\Monkey_016",
+            },
+            crop = { left = 33, top = 13, right = 512, bottom = 512 },
+            focusY = 0.3,
+        },
+        mushanConcept = { -- Pandaria: Mushan_concept 1,2,3,5,6,7
+            cols = 3, tile = 256,
+            files = {
+                "Interface\\Glues\\Credits\\Pandaria\\Mushan_concept1", "Interface\\Glues\\Credits\\Pandaria\\Mushan_concept2", "Interface\\Glues\\Credits\\Pandaria\\Mushan_concept3",
+                "Interface\\Glues\\Credits\\Pandaria\\Mushan_concept5", "Interface\\Glues\\Credits\\Pandaria\\Mushan_concept6", "Interface\\Glues\\Credits\\Pandaria\\Mushan_concept7",
+            },
+            crop = { left = 29, top = 0, right = 760, bottom = 510 },
+        },
+        panda01 = { -- Pandaria: panda01 1,2,3,5,6,7
+            cols = 3, tile = 256,
+            files = {
+                "Interface\\Glues\\Credits\\Pandaria\\panda011", "Interface\\Glues\\Credits\\Pandaria\\panda012", "Interface\\Glues\\Credits\\Pandaria\\panda013",
+                "Interface\\Glues\\Credits\\Pandaria\\panda015", "Interface\\Glues\\Credits\\Pandaria\\panda016", "Interface\\Glues\\Credits\\Pandaria\\panda017",
+            },
+            crop = { left = 21, top = 11, right = 529, bottom = 511 },
+            focusY = 0.3,
+        },
+        pandarenFlyingMount03 = { -- Pandaria: Pandaren Flying Mount03 1,2,5,6
+            cols = 2, tile = 256,
+            files = {
+                "Interface\\Glues\\Credits\\Pandaria\\Pandaren Flying Mount031", "Interface\\Glues\\Credits\\Pandaria\\Pandaren Flying Mount032",
+                "Interface\\Glues\\Credits\\Pandaria\\Pandaren Flying Mount035", "Interface\\Glues\\Credits\\Pandaria\\Pandaren Flying Mount036",
+            },
+            crop = { left = 40, top = 12, right = 512, bottom = 505 },
+            focusY = 0.3,
+        },
+        quilinConcept = { -- Pandaria: Quilin_concept 1,2,5,6 (Quilin_concept)
+            cols = 2, tile = 256,
+            files = {
+                "Interface\\Glues\\Credits\\Pandaria\\Quilin_concept1", "Interface\\Glues\\Credits\\Pandaria\\Quilin_concept2",
+                "Interface\\Glues\\Credits\\Pandaria\\Quilin_concept5", "Interface\\Glues\\Credits\\Pandaria\\Quilin_concept6",
+            },
+            crop = { left = 48, top = 9, right = 512, bottom = 508 },
+            focusY = 0.3,
+        },
+        rabbit = { -- Pandaria: rabbit 1,2,5,6
+            cols = 2, tile = 256,
+            files = {
+                "Interface\\Glues\\Credits\\Pandaria\\Rabbit1", "Interface\\Glues\\Credits\\Pandaria\\Rabbit2",
+                "Interface\\Glues\\Credits\\Pandaria\\Rabbit5", "Interface\\Glues\\Credits\\Pandaria\\Rabbit6",
+            },
+            crop = { left = 40, top = 54, right = 495, bottom = 466 },
+        },
+        salamander = { -- Pandaria: salamander 1,2,5,6
+            cols = 2, tile = 256,
+            files = {
+                "Interface\\Glues\\Credits\\Pandaria\\Salamander1", "Interface\\Glues\\Credits\\Pandaria\\Salamander2",
+                "Interface\\Glues\\Credits\\Pandaria\\Salamander5", "Interface\\Glues\\Credits\\Pandaria\\Salamander6",
+            },
+            crop = { left = 15, top = 59, right = 512, bottom = 485 },
+        },
+        shaBrethren01 = { -- Pandaria: Sha Brethren01 1,2,3,5,6,7
+            cols = 3, tile = 256,
+            files = {
+                "Interface\\Glues\\Credits\\Pandaria\\Sha Brethren011", "Interface\\Glues\\Credits\\Pandaria\\Sha Brethren012", "Interface\\Glues\\Credits\\Pandaria\\Sha Brethren013",
+                "Interface\\Glues\\Credits\\Pandaria\\Sha Brethren015", "Interface\\Glues\\Credits\\Pandaria\\Sha Brethren016", "Interface\\Glues\\Credits\\Pandaria\\Sha Brethren017",
+            },
+            crop = { left = 15, top = 12, right = 660, bottom = 501 },
+        },
+        sha01 = { -- Pandaria: sha_01 1,2,3,5,6,7
+            cols = 3, tile = 256,
+            files = {
+                "Interface\\Glues\\Credits\\Pandaria\\sha_011", "Interface\\Glues\\Credits\\Pandaria\\sha_012", "Interface\\Glues\\Credits\\Pandaria\\sha_013",
+                "Interface\\Glues\\Credits\\Pandaria\\sha_015", "Interface\\Glues\\Credits\\Pandaria\\sha_016", "Interface\\Glues\\Credits\\Pandaria\\sha_017",
+            },
+            crop = { left = 26, top = 65, right = 706, bottom = 486 },
+        },
+        shaMisc02a = { -- Pandaria: sha_misc_02a 1,2,5,6
+            cols = 2, tile = 256,
+            files = {
+                "Interface\\Glues\\Credits\\Pandaria\\Sha_misc_02a1", "Interface\\Glues\\Credits\\Pandaria\\Sha_misc_02a2",
+                "Interface\\Glues\\Credits\\Pandaria\\Sha_misc_02a5", "Interface\\Glues\\Credits\\Pandaria\\Sha_misc_02a6",
+            },
+            crop = { left = 33, top = 13, right = 503, bottom = 496 },
+            focusY = 0.3,
+        },
+        shadowPan01 = { -- Pandaria: Shadow Pan01 1,2,5,6
+            cols = 2, tile = 256,
+            files = {
+                "Interface\\Glues\\Credits\\Pandaria\\Shadow Pan011", "Interface\\Glues\\Credits\\Pandaria\\Shadow Pan012",
+                "Interface\\Glues\\Credits\\Pandaria\\Shadow Pan015", "Interface\\Glues\\Credits\\Pandaria\\Shadow Pan016",
+            },
+            crop = { left = 32, top = 24, right = 512, bottom = 499 },
+            focusY = 0.3,
+        },
+        tier13Priest01 = { -- Pandaria: Tier13_Priest01 1,2,5,6
+            cols = 2, tile = 256,
+            files = {
+                "Interface\\Glues\\Credits\\Pandaria\\Tier13_Priest011", "Interface\\Glues\\Credits\\Pandaria\\Tier13_Priest012",
+                "Interface\\Glues\\Credits\\Pandaria\\Tier13_Priest015", "Interface\\Glues\\Credits\\Pandaria\\Tier13_Priest016",
+            },
+            crop = { left = 73, top = 23, right = 479, bottom = 504 },
+            focusY = 0.3,
+        },
+        tier14DeathKnight01 = { -- Pandaria: Tier14_DeathKnight01 1,2,5,6
+            cols = 2, tile = 256,
+            files = {
+                "Interface\\Glues\\Credits\\Pandaria\\Tier14_DeathKnight011", "Interface\\Glues\\Credits\\Pandaria\\Tier14_DeathKnight012",
+                "Interface\\Glues\\Credits\\Pandaria\\Tier14_DeathKnight015", "Interface\\Glues\\Credits\\Pandaria\\Tier14_DeathKnight016",
+            },
+            crop = { left = 28, top = 48, right = 512, bottom = 497 },
+            focusY = 0.3,
+        },
+        tier14Monk01 = { -- Pandaria: Tier14_Monk01 1,2,5,6
+            cols = 2, tile = 256,
+            files = {
+                "Interface\\Glues\\Credits\\Pandaria\\Tier14_Monk011", "Interface\\Glues\\Credits\\Pandaria\\Tier14_Monk012",
+                "Interface\\Glues\\Credits\\Pandaria\\Tier14_Monk015", "Interface\\Glues\\Credits\\Pandaria\\Tier14_Monk016",
+            },
+            crop = { left = 33, top = 14, right = 512, bottom = 502 },
+            focusY = 0.3,
+        },
+        waterdragon01 = { -- Pandaria: waterdragon_01 1,2,5,6
+            cols = 2, tile = 256,
+            files = {
+                "Interface\\Glues\\Credits\\Pandaria\\waterdragon_011", "Interface\\Glues\\Credits\\Pandaria\\waterdragon_012",
+                "Interface\\Glues\\Credits\\Pandaria\\waterdragon_015", "Interface\\Glues\\Credits\\Pandaria\\waterdragon_016",
+            },
+            crop = { left = 17, top = 18, right = 512, bottom = 494 },
+            focusY = 0.3,
+        },
+        acrest = { -- Credits: Acrest 1,2,3,4
+            cols = 2, tile = 256,
+            files = {
+                "Interface\\Glues\\Credits\\Acrest1", "Interface\\Glues\\Credits\\Acrest2",
+                "Interface\\Glues\\Credits\\Acrest3", "Interface\\Glues\\Credits\\Acrest4",
+            },
+            crop = { left = 28, top = 10, right = 480, bottom = 508 },
+            focusY = 0.3,
+        },
+        arakkoa = { -- Credits: Arakkoa 1,2,3,4,5,6
+            cols = 3, tile = 256,
+            files = {
+                "Interface\\Glues\\Credits\\Arakkoa1", "Interface\\Glues\\Credits\\Arakkoa2", "Interface\\Glues\\Credits\\Arakkoa3",
+                "Interface\\Glues\\Credits\\Arakkoa4", "Interface\\Glues\\Credits\\Arakkoa5", "Interface\\Glues\\Credits\\Arakkoa6",
+            },
+            crop = { left = 0, top = 4, right = 768, bottom = 512 },
+        },
+        arcaneGolem = { -- Credits: Arcane_Golem 1,2,3,4,5,6
+            cols = 3, tile = 256,
+            files = {
+                "Interface\\Glues\\Credits\\Arcane_Golem1", "Interface\\Glues\\Credits\\Arcane_Golem2", "Interface\\Glues\\Credits\\Arcane_Golem3",
+                "Interface\\Glues\\Credits\\Arcane_Golem4", "Interface\\Glues\\Credits\\Arcane_Golem5", "Interface\\Glues\\Credits\\Arcane_Golem6",
+            },
+            crop = { left = 0, top = 4, right = 768, bottom = 512 },
+        },
+        bd = { -- Credits: BD 1,2,3,5,6,7
+            cols = 3, tile = 256,
+            files = {
+                "Interface\\Glues\\Credits\\BD1", "Interface\\Glues\\Credits\\BD2", "Interface\\Glues\\Credits\\BD3",
+                "Interface\\Glues\\Credits\\BD5", "Interface\\Glues\\Credits\\BD6", "Interface\\Glues\\Credits\\BD7",
+            },
+            crop = { left = 0, top = 0, right = 768, bottom = 512 },
+        },
+        bloodElfOne = { -- Credits: Blood_Elf_One 1,2,3,5,6,7
+            cols = 3, tile = 256,
+            files = {
+                "Interface\\Glues\\Credits\\Blood_Elf_One1", "Interface\\Glues\\Credits\\Blood_Elf_One2", "Interface\\Glues\\Credits\\Blood_Elf_One3",
+                "Interface\\Glues\\Credits\\Blood_Elf_One5", "Interface\\Glues\\Credits\\Blood_Elf_One6", "Interface\\Glues\\Credits\\Blood_Elf_One7",
+            },
+            crop = { left = 0, top = 8, right = 768, bottom = 512 },
+        },
+        bloodElfIcon = { -- Credits: BloodElf_Icon 1,2,3,4
+            cols = 2, tile = 256,
+            files = {
+                "Interface\\Glues\\Credits\\BloodElf_Icon1", "Interface\\Glues\\Credits\\BloodElf_Icon2",
+                "Interface\\Glues\\Credits\\BloodElf_Icon3", "Interface\\Glues\\Credits\\BloodElf_Icon4",
+            },
+            crop = { left = 11, top = 47, right = 327, bottom = 483 },
+            focusY = 0.3,
+        },
+        bloodElfPriestessMaster = { -- Credits: BloodElf_Priestess_Master 1,2,3,4,5,6
+            cols = 3, tile = 256,
+            files = {
+                "Interface\\Glues\\Credits\\BloodElf_Priestess_Master1", "Interface\\Glues\\Credits\\BloodElf_Priestess_Master2", "Interface\\Glues\\Credits\\BloodElf_Priestess_Master3",
+                "Interface\\Glues\\Credits\\BloodElf_Priestess_Master4", "Interface\\Glues\\Credits\\BloodElf_Priestess_Master5", "Interface\\Glues\\Credits\\BloodElf_Priestess_Master6",
+            },
+            crop = { left = 198, top = 0, right = 570, bottom = 512 },
+            focusY = 0.3,
+        },
+        bloodelfWebimage = { -- Credits: Bloodelf_Webimage 1,2,3,4
+            cols = 2, tile = 256,
+            files = {
+                "Interface\\Glues\\Credits\\BloodElf_Webimage1", "Interface\\Glues\\Credits\\BloodElf_Webimage2",
+                "Interface\\Glues\\Credits\\BloodElf_Webimage3", "Interface\\Glues\\Credits\\BloodElf_Webimage4",
+            },
+            crop = { left = 0, top = 5, right = 512, bottom = 512 },
+            focusY = 0.3,
+        },
+        centaur = { -- Credits: Centaur 1,2,4,5 (1 2 over 4 5; tile 3 is a stretched filler strip)
+            cols = 2, tile = 256,
+            files = {
+                "Interface\\Glues\\Credits\\Centaur1", "Interface\\Glues\\Credits\\Centaur2",
+                "Interface\\Glues\\Credits\\Centaur4", "Interface\\Glues\\Credits\\Centaur5",
+            },
+            crop = { left = 0, top = 0, right = 512, bottom = 512 },
+            focusY = 0.3,
+        },
+        clefthoof3Horn = { -- Credits: Clefthoof_3_horn 1,2,3,5,6,7
+            cols = 3, tile = 256,
+            files = {
+                "Interface\\Glues\\Credits\\Clefthoof_3_horn1", "Interface\\Glues\\Credits\\Clefthoof_3_horn2", "Interface\\Glues\\Credits\\Clefthoof_3_horn3",
+                "Interface\\Glues\\Credits\\Clefthoof_3_horn5", "Interface\\Glues\\Credits\\Clefthoof_3_horn6", "Interface\\Glues\\Credits\\Clefthoof_3_horn7",
+            },
+            crop = { left = 0, top = 4, right = 768, bottom = 512 },
+        },
+        deathKnight20 = { -- Credits: DeathKnight20 1,2,5,6
+            cols = 2, tile = 256,
+            files = {
+                "Interface\\Glues\\Credits\\DeathKnight201", "Interface\\Glues\\Credits\\DeathKnight202",
+                "Interface\\Glues\\Credits\\DeathKnight205", "Interface\\Glues\\Credits\\DeathKnight206",
+            },
+            crop = { left = 146, top = 27, right = 383, bottom = 486 },
+            focusY = 0.3,
+        },
+        deathKnight30 = { -- Credits: DeathKnight30 1,2,5,6
+            cols = 2, tile = 256,
+            files = {
+                "Interface\\Glues\\Credits\\DeathKnight301", "Interface\\Glues\\Credits\\DeathKnight302",
+                "Interface\\Glues\\Credits\\DeathKnight305", "Interface\\Glues\\Credits\\DeathKnight306",
+            },
+            crop = { left = 109, top = 29, right = 480, bottom = 509 },
+            focusY = 0.3,
+        },
+        deathKnight40 = { -- Credits: DeathKnight40 1,2,5,6
+            cols = 2, tile = 256,
+            files = {
+                "Interface\\Glues\\Credits\\DeathKnight401", "Interface\\Glues\\Credits\\DeathKnight402",
+                "Interface\\Glues\\Credits\\DeathKnight405", "Interface\\Glues\\Credits\\DeathKnight406",
+            },
+            crop = { left = 125, top = 14, right = 355, bottom = 489 },
+            focusY = 0.3,
+        },
+        deathKnight50 = { -- Credits: DeathKnight50 1,2,5,6
+            cols = 2, tile = 256,
+            files = {
+                "Interface\\Glues\\Credits\\DeathKnight501", "Interface\\Glues\\Credits\\DeathKnight502",
+                "Interface\\Glues\\Credits\\DeathKnight505", "Interface\\Glues\\Credits\\DeathKnight506",
+            },
+            crop = { left = 164, top = 12, right = 420, bottom = 505 },
+            focusY = 0.3,
+        },
+        draeneiCharacter = { -- Credits: Draenei_Character 1,2,3,4
+            cols = 2, tile = 256,
+            files = {
+                "Interface\\Glues\\Credits\\Draenei_Character1", "Interface\\Glues\\Credits\\Draenei_Character2",
+                "Interface\\Glues\\Credits\\Draenei_Character3", "Interface\\Glues\\Credits\\Draenei_Character4",
+            },
+            crop = { left = 0, top = 0, right = 510, bottom = 512 },
+            focusY = 0.3,
+        },
+        draeneiCrest = { -- Credits: Draenei_Crest 1,2,3,4
+            cols = 2, tile = 256,
+            files = {
+                "Interface\\Glues\\Credits\\Draenei_Crest1", "Interface\\Glues\\Credits\\Draenei_Crest2",
+                "Interface\\Glues\\Credits\\Draenei_Crest3", "Interface\\Glues\\Credits\\Draenei_Crest4",
+            },
+            crop = { left = 76, top = 78, right = 424, bottom = 454 },
+            focusY = 0.3,
+        },
+        draeneiPaladin = { -- Credits: Draenei_Paladin 1,2,3,4,5,6
+            cols = 3, tile = 256,
+            files = {
+                "Interface\\Glues\\Credits\\Draenei_Paladin1", "Interface\\Glues\\Credits\\Draenei_Paladin2", "Interface\\Glues\\Credits\\Draenei_Paladin3",
+                "Interface\\Glues\\Credits\\Draenei_Paladin4", "Interface\\Glues\\Credits\\Draenei_Paladin5", "Interface\\Glues\\Credits\\Draenei_Paladin6",
+            },
+            crop = { left = 0, top = 0, right = 768, bottom = 512 },
+        },
+        draenei = { -- Credits: Draenei 1,2,4,5
+            cols = 2, tile = 256,
+            files = {
+                "Interface\\Glues\\Credits\\Draenei1", "Interface\\Glues\\Credits\\Draenei2",
+                "Interface\\Glues\\Credits\\Draenei4", "Interface\\Glues\\Credits\\Draenei5",
+            },
+            crop = { left = 46, top = 59, right = 512, bottom = 512 },
+            focusY = 0.3,
+        },
+        drake = { -- Credits: drake 1,2,3,4,5,6 (white padding on the right trimmed)
+            cols = 3, tile = 256,
+            files = {
+                "Interface\\Glues\\Credits\\drake1", "Interface\\Glues\\Credits\\drake2", "Interface\\Glues\\Credits\\drake3",
+                "Interface\\Glues\\Credits\\drake4", "Interface\\Glues\\Credits\\drake5", "Interface\\Glues\\Credits\\drake6",
+            },
+            crop = { left = 60, top = 0, right = 715, bottom = 512 },
+        },
+        dwarfCrest = { -- Credits: DwarfCrest 1,2,3,4 (white padding on the right trimmed)
+            cols = 2, tile = 256,
+            files = {
+                "Interface\\Glues\\Credits\\DwarfCrest1", "Interface\\Glues\\Credits\\DwarfCrest2",
+                "Interface\\Glues\\Credits\\DwarfCrest3", "Interface\\Glues\\Credits\\DwarfCrest4",
+            },
+            crop = { left = 50, top = 0, right = 492, bottom = 512 },
+            focusY = 0.3,
+        },
+        dwarfhunter = { -- Credits: Dwarfhunter 1,2,3,4 (white padding on the right trimmed)
+            cols = 2, tile = 256,
+            files = {
+                "Interface\\Glues\\Credits\\Dwarfhunter1", "Interface\\Glues\\Credits\\Dwarfhunter2",
+                "Interface\\Glues\\Credits\\Dwarfhunter3", "Interface\\Glues\\Credits\\Dwarfhunter4",
+            },
+            crop = { left = 10, top = 0, right = 472, bottom = 512 },
+            focusY = 0.3,
+        },
+        elekk = { -- Credits: Elekk 1,2,4,5 (1 2 over 4 5; tiles 3 and 6 are filler)
+            cols = 2, tile = 256,
+            files = {
+                "Interface\\Glues\\Credits\\Elekk1", "Interface\\Glues\\Credits\\Elekk2",
+                "Interface\\Glues\\Credits\\Elekk4", "Interface\\Glues\\Credits\\Elekk5",
+            },
+            crop = { left = 0, top = 0, right = 512, bottom = 512 },
+            focusY = 0.3,
+        },
+        elemental = { -- Credits: Elemental 1,2,3,4
+            cols = 2, tile = 256,
+            files = {
+                "Interface\\Glues\\Credits\\Elemental1", "Interface\\Glues\\Credits\\Elemental2",
+                "Interface\\Glues\\Credits\\Elemental3", "Interface\\Glues\\Credits\\Elemental4",
+            },
+            crop = { left = 0, top = 81, right = 512, bottom = 512 },
+        },
+        femaleBloodElf = { -- Credits: Female_BloodElf 1,2,3,4
+            cols = 2, tile = 256,
+            files = {
+                "Interface\\Glues\\Credits\\Female_BloodElf1", "Interface\\Glues\\Credits\\Female_BloodElf2",
+                "Interface\\Glues\\Credits\\Female_BloodElf3", "Interface\\Glues\\Credits\\Female_BloodElf4",
+            },
+            crop = { left = 0, top = 5, right = 512, bottom = 512 },
+            focusY = 0.3,
+        },
+        forsakenCrest = { -- Credits: ForsakenCrest 1,2,3,4
+            cols = 2, tile = 256,
+            files = {
+                "Interface\\Glues\\Credits\\ForsakenCrest1", "Interface\\Glues\\Credits\\ForsakenCrest2",
+                "Interface\\Glues\\Credits\\ForsakenCrest3", "Interface\\Glues\\Credits\\ForsakenCrest4",
+            },
+            crop = { left = 74, top = 30, right = 426, bottom = 490 },
+            focusY = 0.3,
+        },
+        frostwyrm01TGA = { -- Credits: Frostwyrm01TGA 1,2,5,6
+            cols = 2, tile = 256,
+            files = {
+                "Interface\\Glues\\Credits\\Frostwyrm01TGA1", "Interface\\Glues\\Credits\\Frostwyrm01TGA2",
+                "Interface\\Glues\\Credits\\Frostwyrm01TGA5", "Interface\\Glues\\Credits\\Frostwyrm01TGA6",
+            },
+            crop = { left = 0, top = 21, right = 475, bottom = 488 },
+            focusY = 0.3,
+        },
+        fungalGiant = { -- Credits: FungalGiant 1,2,3,4
+            cols = 2, tile = 256,
+            files = {
+                "Interface\\Glues\\Credits\\FungalGiant1", "Interface\\Glues\\Credits\\FungalGiant2",
+                "Interface\\Glues\\Credits\\FungalGiant3", "Interface\\Glues\\Credits\\FungalGiant4",
+            },
+            crop = { left = 0, top = 5, right = 512, bottom = 512 },
+            focusY = 0.3,
+        },
+        gargoyle = { -- Credits: gargoyle 1,2,3,4
+            cols = 2, tile = 256,
+            files = {
+                "Interface\\Glues\\Credits\\gargoyle1", "Interface\\Glues\\Credits\\gargoyle2",
+                "Interface\\Glues\\Credits\\gargoyle3", "Interface\\Glues\\Credits\\gargoyle4",
+            },
+            crop = { left = 11, top = 8, right = 444, bottom = 508 },
+            focusY = 0.3,
+        },
+        hordeBanner = { -- Credits: HordeBanner 1,2,3,4 (white padding on the right trimmed)
+            cols = 2, tile = 256,
+            files = {
+                "Interface\\Glues\\Credits\\HordeBanner1", "Interface\\Glues\\Credits\\HordeBanner2",
+                "Interface\\Glues\\Credits\\HordeBanner3", "Interface\\Glues\\Credits\\HordeBanner4",
+            },
+            crop = { left = 17, top = 0, right = 438, bottom = 512 },
+            focusY = 0.3,
+        },
+        humanMage = { -- Credits: Human_Mage 1,2,3,4
+            cols = 2, tile = 256,
+            files = {
+                "Interface\\Glues\\Credits\\Human_Mage1", "Interface\\Glues\\Credits\\Human_Mage2",
+                "Interface\\Glues\\Credits\\Human_Mage3", "Interface\\Glues\\Credits\\Human_Mage4",
+            },
+            crop = { left = 0, top = 5, right = 512, bottom = 512 },
+            focusY = 0.3,
+        },
+        humanMale = { -- Credits: Human_Male 1,2,3,4
+            cols = 2, tile = 256,
+            files = {
+                "Interface\\Glues\\Credits\\Human_Male1", "Interface\\Glues\\Credits\\Human_Male2",
+                "Interface\\Glues\\Credits\\Human_Male3", "Interface\\Glues\\Credits\\Human_Male4",
+            },
+            crop = { left = 0, top = 5, right = 512, bottom = 512 },
+            focusY = 0.3,
+        },
+        hunter01TGA = { -- Credits: Hunter01TGA 1,2,5,6
+            cols = 2, tile = 256,
+            files = {
+                "Interface\\Glues\\Credits\\Hunter01TGA1", "Interface\\Glues\\Credits\\Hunter01TGA2",
+                "Interface\\Glues\\Credits\\Hunter01TGA5", "Interface\\Glues\\Credits\\Hunter01TGA6",
+            },
+            crop = { left = 97, top = 12, right = 512, bottom = 512 },
+            focusY = 0.3,
+        },
+        hunter = { -- Credits: Hunter 1,2,3,4,5,6
+            cols = 3, tile = 256,
+            files = {
+                "Interface\\Glues\\Credits\\Hunter1", "Interface\\Glues\\Credits\\Hunter2", "Interface\\Glues\\Credits\\Hunter3",
+                "Interface\\Glues\\Credits\\Hunter4", "Interface\\Glues\\Credits\\Hunter5", "Interface\\Glues\\Credits\\Hunter6",
+            },
+            crop = { left = 0, top = 4, right = 768, bottom = 512 },
+        },
+        ironDwarfTGA = { -- Credits: IronDwarfTGA 1,2,5,6
+            cols = 2, tile = 256,
+            files = {
+                "Interface\\Glues\\Credits\\IronDwarfTGA1", "Interface\\Glues\\Credits\\IronDwarfTGA2",
+                "Interface\\Glues\\Credits\\IronDwarfTGA5", "Interface\\Glues\\Credits\\IronDwarfTGA6",
+            },
+            crop = { left = 102, top = 22, right = 467, bottom = 497 },
+            focusY = 0.3,
+        },
+        l60etc = { -- Credits: L60ETC 1,2,3,4
+            cols = 2, tile = 256,
+            files = {
+                "Interface\\Glues\\Credits\\L60ETC1", "Interface\\Glues\\Credits\\L60ETC2",
+                "Interface\\Glues\\Credits\\L60ETC3", "Interface\\Glues\\Credits\\L60ETC4",
+            },
+            crop = { left = 0, top = 5, right = 512, bottom = 512 },
+            focusY = 0.3,
+        },
+        leatherSunwellTGA = { -- Credits: LeatherSunwellTGA 1,2,5,6
+            cols = 2, tile = 256,
+            files = {
+                "Interface\\Glues\\Credits\\LeatherSunwellTGA1", "Interface\\Glues\\Credits\\LeatherSunwellTGA2",
+                "Interface\\Glues\\Credits\\LeatherSunwellTGA5", "Interface\\Glues\\Credits\\LeatherSunwellTGA6",
+            },
+            crop = { left = 108, top = 0, right = 418, bottom = 497 },
+            focusY = 0.3,
+        },
+        maginnisTGA = { -- Credits: MaginnisTGA 1,2,5,6
+            cols = 2, tile = 256,
+            files = {
+                "Interface\\Glues\\Credits\\MaginnisTGA1", "Interface\\Glues\\Credits\\MaginnisTGA2",
+                "Interface\\Glues\\Credits\\MaginnisTGA5", "Interface\\Glues\\Credits\\MaginnisTGA6",
+            },
+            crop = { left = 92, top = 3, right = 509, bottom = 506 },
+            focusY = 0.3,
+        },
+        magnataur = { -- Credits: Magnataur 1,2,5,6
+            cols = 2, tile = 256,
+            files = {
+                "Interface\\Glues\\Credits\\Magnataur1", "Interface\\Glues\\Credits\\Magnataur2",
+                "Interface\\Glues\\Credits\\Magnataur5", "Interface\\Glues\\Credits\\Magnataur6",
+            },
+            crop = { left = 94, top = 0, right = 512, bottom = 512 },
+            focusY = 0.3,
+        },
+        magnataur2 = { -- Credits: Magnataur2 1,2,5,6
+            cols = 2, tile = 256,
+            files = {
+                "Interface\\Glues\\Credits\\Magnataur21", "Interface\\Glues\\Credits\\Magnataur22",
+                "Interface\\Glues\\Credits\\Magnataur25", "Interface\\Glues\\Credits\\Magnataur26",
+            },
+            crop = { left = 81, top = 8, right = 512, bottom = 498 },
+            focusY = 0.3,
+        },
+        mergul01 = { -- Credits: Mergul01 1,2,3,5,6,7 (1-3 over 5-7)
+            cols = 3, tile = 256,
+            files = {
+                "Interface\\Glues\\Credits\\Mergul011", "Interface\\Glues\\Credits\\Mergul012", "Interface\\Glues\\Credits\\Mergul013",
+                "Interface\\Glues\\Credits\\Mergul015", "Interface\\Glues\\Credits\\Mergul016", "Interface\\Glues\\Credits\\Mergul017",
+            },
+            crop = { left = 80, top = 47, right = 573, bottom = 451 },
+        },
+        naga = { -- Credits: Naga 1,2,3,4
+            cols = 2, tile = 256,
+            files = {
+                "Interface\\Glues\\Credits\\Naga1", "Interface\\Glues\\Credits\\Naga2",
+                "Interface\\Glues\\Credits\\Naga3", "Interface\\Glues\\Credits\\Naga4",
+            },
+            crop = { left = 3, top = 4, right = 505, bottom = 502 },
+            focusY = 0.3,
+        },
+        nightelfcrest = { -- Credits: Nightelfcrest 1,2,3,4
+            cols = 2, tile = 256,
+            files = {
+                "Interface\\Glues\\Credits\\Nightelfcrest1", "Interface\\Glues\\Credits\\Nightelfcrest2",
+                "Interface\\Glues\\Credits\\Nightelfcrest3", "Interface\\Glues\\Credits\\Nightelfcrest4",
+            },
+            crop = { left = 26, top = 0, right = 486, bottom = 512 },
+            focusY = 0.3,
+        },
+        nightElves = { -- Credits: NightElves 1,2,4,5
+            cols = 2, tile = 256,
+            files = {
+                "Interface\\Glues\\Credits\\NightElves1", "Interface\\Glues\\Credits\\NightElves2",
+                "Interface\\Glues\\Credits\\NightElves4", "Interface\\Glues\\Credits\\NightElves5",
+            },
+            crop = { left = 0, top = 0, right = 512, bottom = 512 },
+            focusY = 0.3,
+        },
+        northGiant = { -- Credits: NorthGiant 1,2,5,6
+            cols = 2, tile = 256,
+            files = {
+                "Interface\\Glues\\Credits\\NorthGiant1", "Interface\\Glues\\Credits\\NorthGiant2",
+                "Interface\\Glues\\Credits\\NorthGiant5", "Interface\\Glues\\Credits\\NorthGiant6",
+            },
+            crop = { left = 114, top = 25, right = 413, bottom = 487 },
+            focusY = 0.3,
+        },
+        ogreLord = { -- Credits: Ogre_Lord 1,2,3,4
+            cols = 2, tile = 256,
+            files = {
+                "Interface\\Glues\\Credits\\Ogre_Lord1", "Interface\\Glues\\Credits\\Ogre_Lord2",
+                "Interface\\Glues\\Credits\\Ogre_Lord3", "Interface\\Glues\\Credits\\Ogre_Lord4",
+            },
+            crop = { left = 0, top = 5, right = 512, bottom = 512 },
+            focusY = 0.3,
+        },
+        orc = { -- Credits: Orc 1,2 (one tile wide, two high)
+            cols = 1, tile = 256,
+            files = {
+                "Interface\\Glues\\Credits\\Orc1",
+                "Interface\\Glues\\Credits\\Orc2",
+            },
+            crop = { left = 0, top = 0, right = 256, bottom = 512 },
+            focusY = 0.3,
+        },
+        orcshield = { -- Credits: Orcshield 1,2,3,4
+            cols = 2, tile = 256,
+            files = {
+                "Interface\\Glues\\Credits\\Orcshield1", "Interface\\Glues\\Credits\\Orcshield2",
+                "Interface\\Glues\\Credits\\Orcshield3", "Interface\\Glues\\Credits\\Orcshield4",
+            },
+            crop = { left = 9, top = 41, right = 501, bottom = 497 },
+            focusY = 0.3,
+        },
+        sanctification = { -- Credits: Sanctification 1,2,5,6
+            cols = 2, tile = 256,
+            files = {
+                "Interface\\Glues\\Credits\\Sanctification1", "Interface\\Glues\\Credits\\Sanctification2",
+                "Interface\\Glues\\Credits\\Sanctification5", "Interface\\Glues\\Credits\\Sanctification6",
+            },
+            crop = { left = 114, top = 16, right = 503, bottom = 500 },
+            focusY = 0.3,
+        },
+        seaVrykul = { -- Credits: SeaVrykul 1,2,3,5,6,7
+            cols = 3, tile = 256,
+            files = {
+                "Interface\\Glues\\Credits\\SeaVrykul1", "Interface\\Glues\\Credits\\SeaVrykul2", "Interface\\Glues\\Credits\\SeaVrykul3",
+                "Interface\\Glues\\Credits\\SeaVrykul5", "Interface\\Glues\\Credits\\SeaVrykul6", "Interface\\Glues\\Credits\\SeaVrykul7",
+            },
+            crop = { left = 2, top = 0, right = 616, bottom = 508 },
+        },
+        shivan = { -- Credits: Shivan 1,2,3,4
+            cols = 2, tile = 256,
+            files = {
+                "Interface\\Glues\\Credits\\Shivan1", "Interface\\Glues\\Credits\\Shivan2",
+                "Interface\\Glues\\Credits\\Shivan3", "Interface\\Glues\\Credits\\Shivan4",
+            },
+            crop = { left = 0, top = 5, right = 512, bottom = 512 },
+            focusY = 0.3,
+        },
+        shovelTusk = { -- Credits: ShovelTusk 1,2,3,5,6,7
+            cols = 3, tile = 256,
+            files = {
+                "Interface\\Glues\\Credits\\ShovelTusk1", "Interface\\Glues\\Credits\\ShovelTusk2", "Interface\\Glues\\Credits\\ShovelTusk3",
+                "Interface\\Glues\\Credits\\ShovelTusk5", "Interface\\Glues\\Credits\\ShovelTusk6", "Interface\\Glues\\Credits\\ShovelTusk7",
+            },
+            crop = { left = 52, top = 21, right = 632, bottom = 472 },
+        },
+        taurenHunter = { -- Credits: Tauren_hunter 1,2,3,4
+            cols = 2, tile = 256,
+            files = {
+                "Interface\\Glues\\Credits\\Tauren_hunter1", "Interface\\Glues\\Credits\\Tauren_hunter2",
+                "Interface\\Glues\\Credits\\Tauren_hunter3", "Interface\\Glues\\Credits\\Tauren_hunter4",
+            },
+            crop = { left = 67, top = 2, right = 459, bottom = 512 },
+            focusY = 0.3,
+        },
+        tauren = { -- Credits: Tauren 1,2,3,4,5,6 (all six; the last column's files are half width)
+            cols = 3, tile = 256,
+            colWidths = { 256, 256, 128 },
+            files = {
+                "Interface\\Glues\\Credits\\Tauren1", "Interface\\Glues\\Credits\\Tauren2", "Interface\\Glues\\Credits\\Tauren3",
+                "Interface\\Glues\\Credits\\Tauren4", "Interface\\Glues\\Credits\\Tauren5", "Interface\\Glues\\Credits\\Tauren6",
+            },
+            crop = { left = 46, top = 0, right = 632, bottom = 512 },
+        },
+        taurencrest = { -- Credits: Taurencrest 1,2,3,4
+            cols = 2, tile = 256,
+            files = {
+                "Interface\\Glues\\Credits\\Taurencrest1", "Interface\\Glues\\Credits\\Taurencrest2",
+                "Interface\\Glues\\Credits\\Taurencrest3", "Interface\\Glues\\Credits\\Taurencrest4",
+            },
+            crop = { left = 46, top = 0, right = 466, bottom = 512 },
+            focusY = 0.3,
+        },
+        theBroken = { -- Credits: The_Broken 1,2,3,4,5,6 (all six; the painting sits between white and black filler)
+            cols = 3, tile = 256,
+            files = {
+                "Interface\\Glues\\Credits\\The_Broken1", "Interface\\Glues\\Credits\\The_Broken2", "Interface\\Glues\\Credits\\The_Broken3",
+                "Interface\\Glues\\Credits\\The_Broken4", "Interface\\Glues\\Credits\\The_Broken5", "Interface\\Glues\\Credits\\The_Broken6",
+            },
+            crop = { left = 270, top = 0, right = 510, bottom = 512 },
+            focusY = 0.3,
+        },
+        tier4Druid = { -- Credits: Tier4_Druid 2,5
+            cols = 1, tile = 256,
+            files = {
+                "Interface\\Glues\\Credits\\Tier4_Druid2",
+                "Interface\\Glues\\Credits\\Tier4_Druid5",
+            },
+            crop = { left = 0, top = 0, right = 256, bottom = 512 },
+            focusY = 0.3,
+        },
+        troll = { -- Credits: Troll 1,2,4,5
+            cols = 2, tile = 256,
+            files = {
+                "Interface\\Glues\\Credits\\Troll1", "Interface\\Glues\\Credits\\Troll2",
+                "Interface\\Glues\\Credits\\Troll4", "Interface\\Glues\\Credits\\Troll5",
+            },
+            crop = { left = 8, top = 0, right = 512, bottom = 512 },
+            focusY = 0.3,
+        },
+        trollBanner = { -- Credits: TrollBanner 1,2,3,4
+            cols = 2, tile = 256,
+            files = {
+                "Interface\\Glues\\Credits\\TrollBanner1", "Interface\\Glues\\Credits\\TrollBanner2",
+                "Interface\\Glues\\Credits\\TrollBanner3", "Interface\\Glues\\Credits\\TrollBanner4",
+            },
+            crop = { left = 2, top = 17, right = 503, bottom = 500 },
+            focusY = 0.3,
+        },
+        tuskarGuy = { -- Credits: TuskarGuy 1,2,5,6
+            cols = 2, tile = 256,
+            files = {
+                "Interface\\Glues\\Credits\\TuskarGuy1", "Interface\\Glues\\Credits\\TuskarGuy2",
+                "Interface\\Glues\\Credits\\TuskarGuy5", "Interface\\Glues\\Credits\\TuskarGuy6",
+            },
+            crop = { left = 50, top = 6, right = 457, bottom = 510 },
+            focusY = 0.3,
+        },
+        undeadcrest = { -- Credits: undeadcrest 1,2,3,4
+            cols = 2, tile = 256,
+            files = {
+                "Interface\\Glues\\Credits\\undeadcrest1", "Interface\\Glues\\Credits\\undeadcrest2",
+                "Interface\\Glues\\Credits\\undeadcrest3", "Interface\\Glues\\Credits\\undeadcrest4",
+            },
+            crop = { left = 52, top = 16, right = 464, bottom = 496 },
+            focusY = 0.3,
+        },
+        vamp = { -- Credits: Vamp 1,2,5,6
+            cols = 2, tile = 256,
+            files = {
+                "Interface\\Glues\\Credits\\Vamp1", "Interface\\Glues\\Credits\\Vamp2",
+                "Interface\\Glues\\Credits\\Vamp5", "Interface\\Glues\\Credits\\Vamp6",
+            },
+            crop = { left = 95, top = 25, right = 311, bottom = 484 },
+            focusY = 0.3,
+        },
+        vryFem = { -- Credits: VryFem 1,2,5,6
+            cols = 2, tile = 256,
+            files = {
+                "Interface\\Glues\\Credits\\VryFem1", "Interface\\Glues\\Credits\\VryFem2",
+                "Interface\\Glues\\Credits\\VryFem5", "Interface\\Glues\\Credits\\VryFem6",
+            },
+            crop = { left = 31, top = 30, right = 462, bottom = 488 },
+            focusY = 0.3,
+        },
+        vrykulUndead = { -- Credits: Vrykul_Undead 1,2,5,6
+            cols = 2, tile = 256,
+            files = {
+                "Interface\\Glues\\Credits\\Vrykul_Undead1", "Interface\\Glues\\Credits\\Vrykul_Undead2",
+                "Interface\\Glues\\Credits\\Vrykul_Undead5", "Interface\\Glues\\Credits\\Vrykul_Undead6",
+            },
+            crop = { left = 61, top = 12, right = 325, bottom = 502 },
+            focusY = 0.3,
+        },
+        vrykulFace = { -- Credits: VrykulFace 1,2,5,6
+            cols = 2, tile = 256,
+            files = {
+                "Interface\\Glues\\Credits\\VrykulFace1", "Interface\\Glues\\Credits\\VrykulFace2",
+                "Interface\\Glues\\Credits\\VrykulFace5", "Interface\\Glues\\Credits\\VrykulFace6",
+            },
+            crop = { left = 123, top = 10, right = 512, bottom = 512 },
+            focusY = 0.3,
+        },
+        wowBloodElves = { -- Credits: WOW_BloodElves 1,2,3,4
+            cols = 2, tile = 256,
+            files = {
+                "Interface\\Glues\\Credits\\WOW_BloodElves1", "Interface\\Glues\\Credits\\WOW_BloodElves2",
+                "Interface\\Glues\\Credits\\WOW_BloodElves3", "Interface\\Glues\\Credits\\WOW_BloodElves4",
+            },
+            crop = { left = 0, top = 5, right = 512, bottom = 512 },
+            focusY = 0.3,
+        },
+        wrathguard = { -- Credits: Wrathguard 1,2,4,5
+            cols = 2, tile = 256,
+            files = {
+                "Interface\\Glues\\Credits\\Wrathguard1", "Interface\\Glues\\Credits\\Wrathguard2",
+                "Interface\\Glues\\Credits\\Wrathguard4", "Interface\\Glues\\Credits\\Wrathguard5",
+            },
+            crop = { left = 0, top = 5, right = 512, bottom = 512 },
+            focusY = 0.3,
+        },
+        zombie = { -- Credits: Zombie 1,2,5,6
+            cols = 2, tile = 256,
+            files = {
+                "Interface\\Glues\\Credits\\Zombie1", "Interface\\Glues\\Credits\\Zombie2",
+                "Interface\\Glues\\Credits\\Zombie5", "Interface\\Glues\\Credits\\Zombie6",
+            },
+            crop = { left = 74, top = 25, right = 440, bottom = 484 },
+            focusY = 0.3,
+        },
+    },
+    -- The plate each sign shows on the Birthsign tab. Signs without their own
+    -- picture yet borrow Greymane.
+    birthsignPlate = {
+        naaru_ember = "draeneiFemale",     -- January, The Mindsighter
+        old_whisper = "shadowmoon",        -- February, The Sign of Communion
+        first_pattern = "aegwynnsTower",   -- March, The Tower
+        broken_wheel = "nashalStatue",     -- April, The Sign of Creation
+        green_dreaming = "powersource",    -- May, Sign of the Maker
+        long_silence = "revenant",         -- June, The Revenant's Sign
+        twisting_star = "forestSprite",    -- July, The Sign of the Sprite
+        worldsouls_echo = "demonChamber",  -- August, Sign of Binding
+        drifting_light = "worgenHuman",    -- September, The Serf
+        deep_current = "greymane",         -- October, The Haunt
+        ember_tide = "tidemother",         -- November, Sign of the Tidemother
+        waking_stone = "owl",              -- December, Sign of the Warden
+    },
+    -- The pictures a custom sign can take, in the picker's order (owner,
+    -- 2026-10-22). The choice is saved as CharDB.identity.birthSignCustomPlate.
+    birthsignCustomPlates = {
+        "priestArmor", "rogueArmor", "satyr", "seaGiant", "seaGiantKing",
+        "shamanArmor", "shamanMythicArmor", "battle005", "battle006", "battle027",
+        "battle028", "battle033", "battle034", "battle035", "battle036",
+        -- The owner's second list (2026-10-22).
+        "battle037", "battle038", "camel01", "chimera01",
+        "dbTurtledragon", "firelandsGorge01", "goblinPhysiqueM03", "lesserelementalEarth02a",
+        "lesserelementalFire03b", "shapelessColor01", "skardyn02", "tier11Hunter01",
+        "tier11Warrior01", "twilghtAscendant01a", "twilightsHammerBuildings07", "uldumSphinx01",
+        "uldumtolvir1", "challengeRogueNotused", "challengeRogueNotusedPart2", "challengeRogue",
+        "challengeRoguePart2", "crane01", "druidChallenge", "femalePandaren",
+        "foodog002b", "foodogCreature", "hordePandaren", "koi03",
+        "koiman01", "lionMan", "mantis01", "mantis04",
+        "moguBossConceptNew", "moguMonkConcept", "monkey01", "mushanConcept",
+        "panda01", "pandarenFlyingMount03", "quilinConcept", "rabbit",
+        "salamander", "shaBrethren01", "sha01", "shaMisc02a",
+        "shadowPan01", "tier13Priest01", "tier14DeathKnight01", "tier14Monk01",
+        "waterdragon01", "acrest", "arakkoa", "arcaneGolem",
+        "bd", "bloodElfOne", "bloodElfIcon", "bloodElfPriestessMaster",
+        "bloodelfWebimage", "centaur", "clefthoof3Horn", "deathKnight20",
+        "deathKnight30", "deathKnight40", "deathKnight50", "draeneiCharacter",
+        "draeneiCrest", "draeneiPaladin", "draenei", "drake",
+        "dwarfCrest", "dwarfhunter", "elekk", "elemental",
+        "femaleBloodElf", "forsakenCrest", "frostwyrm01TGA", "fungalGiant",
+        "gargoyle", "hordeBanner", "humanMage", "humanMale",
+        "hunter01TGA", "hunter", "ironDwarfTGA", "l60etc",
+        "leatherSunwellTGA", "maginnisTGA", "magnataur", "magnataur2",
+        "mergul01", "naga", "nightelfcrest", "nightElves",
+        "northGiant", "ogreLord", "orc", "orcshield",
+        "sanctification", "seaVrykul", "shivan", "shovelTusk",
+        "taurenHunter", "tauren", "taurencrest", "theBroken",
+        "tier4Druid", "troll", "trollBanner", "tuskarGuy",
+        "undeadcrest", "vamp", "vryFem", "vrykulUndead",
+        "vrykulFace", "wowBloodElves", "wrathguard", "zombie",
+    },
+    -- The picture picker's thumbnails: Blizzard's square button glows (Interface/Buttons),
+    -- drawn additive, for the one under the mouse and the one on the sign.
+    picturePickerHover = "Interface\\Buttons\\ButtonHilight-Square",
+    picturePickerChosen = "Interface\\Buttons\\CheckButtonHilight",
+    -- Papers: a parchment the sign's plate and words sit on, one picked per
+    -- month to match the picture's tone (owner, 2026-10-21). A sign without
+    -- one keeps the plain look: plate under the titans, words over it.
+    -- The player-choice card parchments, one per sheet in FrameGeneral (UIFrame<Kit>).
+    papers = {
+        allianceCard = "UI-Frame-Alliance-CardParchment",
+        dragonflightCard = "UI-Frame-Dragonflight-CardParchment",
+        hordeCard = "UI-Frame-Horde-CardParchment",
+        kyrianCard = "UI-Frame-Kyrian-CardParchment",
+        necrolordCard = "UI-Frame-Necrolord-CardParchment",
+        neutralCard = "UI-Frame-Neutral-CardParchment",
+        nightFaeCard = "UI-Frame-NightFae-CardParchment",
+        venthyrCard = "UI-Frame-Venthyr-CardParchment",
+    },
+    birthsignPaper = {
+        naaru_ember = "nightFaeCard",      -- January, same as December
+        old_whisper = "venthyrCard",       -- February
+        first_pattern = "dragonflightCard", -- March
+        broken_wheel = "neutralCard",      -- April
+        green_dreaming = "necrolordCard",  -- May
+        long_silence = "neutralCard",      -- June
+        twisting_star = "hordeCard",       -- July
+        worldsouls_echo = "venthyrCard",   -- August
+        drifting_light = "neutralCard",    -- September
+        deep_current = "kyrianCard",       -- October, "The Haunt"
+        ember_tide = "dragonflightCard",   -- November
+        waking_stone = "nightFaeCard",     -- December
+        custom = "neutralCard",            -- a sign of the player's own
+    },
+    -- The soft, painterly edge of a plate on paper: solid in the middle, a
+    -- ragged fade on all four sides, over the part of the plate's box the
+    -- picture covers (birthsign.plateMaskScale): a custom picture slides
+    -- under it, and a picture edge inside the box fades too. Backstory's own
+    -- file, drawn by
+    -- scripts/make-plate-mask.js; the Great Vault's round mask it replaced
+    -- never reached a picture's corners, so the straight edges showed.
+    plateSoftMask = "Interface\\AddOns\\Blackacre_Backstory\\Media\\PlateSoftEdge",
     -- The art export names this file with the -TOPLEFT suffix.
     backstoryQuestLogFile = "Interface\\QuestFrame\\UI-QUESTLOG-EMPTY-TOPLEFT",
     spellbookPage = "Interface\\Spellbook\\Spellbook-Page-1",
@@ -413,8 +1949,8 @@ Blackacre.UI.Theme.Fonts = {
         { key = "skurri", path = WOW_SKURRI, name = "Skurri (native)", full = true },
         -- Bundled fonts: only ones whose designers allow redistribution.
         -- Credits and license notes: Media/Fonts/FONTS.txt.
-        { key = "freebooter", path = FONT .. "FREEBOOTERUPDATED.TTF", name = "Freebooter", full = false },
-        { key = "magicSchool", path = FONT .. "MagicSchoolOne-ovYz.ttf", name = "Magic School", full = false },
+        { key = "freebooter", path = FONT .. "FREEBOOTERUPDATED.TTF", name = "Freebooter", full = false, ascii = true },
+        { key = "magicSchool", path = FONT .. "MagicSchoolOne-ovYz.ttf", name = "Magic School", full = false, ascii = true },
         -- sizeScale / spacing: journal size multiplier and extra px between lines
         -- (ApplyReadableBodyFont). WoW draws only the top ~1 em of each glyph, so the traced
         -- fonts are built shrunk to fit inside 1 em and sizeScale brings them back up; that
@@ -529,9 +2065,12 @@ local RETIRED_FONT_KEYS = {
 -- "By race": the journal font a character starts with, by UnitRace file token. A profile
 -- keeps "race" until the player picks a font; every lookup resolves it here.
 -- Retail's allied races take their kin's font (tokens as Blizzard's Retail code
--- spells them); peoples with no kin here (Draenei, Goblin, Pandaren, Vulpera,
--- Dracthyr, Haranir) use the default font until the owner picks one.
+-- spells them). Peoples with no kin font yet write in the game's Morpheus
+-- (owner, 2026-10-09); Haranir are "Harronir" in Blizzard's code.
 local RACE_JOURNAL_FONT = {
+    Draenei = "morpheusGame", LightforgedDraenei = "morpheusGame",
+    Goblin = "morpheusGame", Pandaren = "morpheusGame", Vulpera = "morpheusGame",
+    Dracthyr = "morpheusGame", Harronir = "morpheusGame",
     Human = "learnedHand", KulTiran = "learnedHand",
     Dwarf = "khaz", DarkIronDwarf = "khaz", EarthenDwarf = "khaz",
     Gnome = "magicSchool", Mechagnome = "magicSchool",
@@ -794,16 +2333,12 @@ function Blackacre.UI.Theme.CreateBookShell(name, titleText)
     addPage:SetFrameLevel((frame.header:GetFrameLevel() or 1) + 5)
     local addTex = addPage:CreateTexture(nil, "ARTWORK")
     addTex:SetAllPoints(addPage)
-    if not Blackacre.UI.Theme.TrySetAtlas(addTex, "GarrMission_MissionIcon-Logistics", false) then
-        addTex:SetTexture("Interface\\Garrison\\GarrisonMissionTypeIcons")
-    end
+    Blackacre.UI.Theme.TrySetAtlas(addTex, "GarrMission_MissionIcon-Logistics", false)
     addPage.icon = addTex
     local addHi = addPage:CreateTexture(nil, "HIGHLIGHT")
     addHi:SetAllPoints(addPage)
     if Blackacre.UI.Theme.TrySetAtlas(addHi, "GarrMission_MissionIcon-Logistics", false) then
         addHi:SetAlpha(0.35)
-    else
-        addHi:SetColorTexture(1, 1, 1, 0.2)
     end
     addPage:SetScript("OnEnter", function(self)
         GameTooltip:SetOwner(self, "ANCHOR_BOTTOM")
@@ -1233,38 +2768,55 @@ function Blackacre.UI.Theme.FitBookArtToFrame(host)
     tex:Show()
 end
 
---- Map symbols fancy fonts often lack to plain ASCII letters/spaces.
---- (Cannot use Default font for | only — WoW draws each string in ONE font.)
-function Blackacre.UI.Theme.SanitizeBodyText(text)
+--- Map symbols the journal fonts lack to characters they have, so nothing draws as a
+--- box. WoW draws each string in ONE font, so a missing mark can't come from another.
+--- Measured from the font files (2026-10-15): every Blackacre font (Khaz, Highborne,
+--- Highborne Text, Old Gilnean, Learned Hand, Peon, Tol'vir) has the digits and
+--- . , : ; ' " ! ? ( ) - & / #, and none has $ % * + < = > @ [ \ ] ^ _ ` { | } ~ or the
+--- curly dashes, ellipsis and bullets. Every replacement below is built only from
+--- characters they do have. Rows with `full = true` (WoW's own fonts) are left alone;
+--- rows with `ascii = true` (Freebooter, Magic School: all of plain ASCII, measured the
+--- same day) only lose the curly marks.
+--- fontKey: the font the text is drawn in (a page's own font); nil = the Tome-wide one.
+local BODY_SWAPS = {
+    -- Typographic marks first, so their stand-ins aren't swapped again.
+    { "\226\128\147", "-" },      -- en dash
+    { "\226\128\148", " - " },    -- em dash
+    { "\226\128\166", "..." },    -- ellipsis
+    { "\194\183", " - " },         -- middle dot
+    { "\226\128\162", "-" },      -- bullet
+    { "\195\151", "x" },           -- multiplication sign
+    { "\226\128\156", "\"" }, { "\226\128\157", "\"" },
+    { "\226\128\152", "'" }, { "\226\128\153", "'" },
+    -- ASCII the Blackacre fonts don't draw. A typed | is stored as ||.
+    { "||", " / " },
+    { "|", " / " },
+    { "\\", "/" },
+    { "%[", "(" }, { "%]", ")" }, { "{", "(" }, { "}", ")" },
+    { "<", "(" }, { ">", ")" },
+    { "~", "-" },
+    { "`", "'" },
+    { "@", " at " },
+    { "%^", " " },
+    { "_", " " },
+    { "%%", " percent" },
+    { "%+", " and " },
+    { "=", " is " },
+    { "%*", "" },                -- *emote* asterisks just go
+    { "%$", "" },
+}
+local FIRST_ASCII_SWAP = 11 -- BODY_SWAPS[11] is the first plain-ASCII one
+
+function Blackacre.UI.Theme.SanitizeBodyText(text, fontKey)
     if not text or text == "" then return text end
-    if not Blackacre.UI.Theme.GetBodyFontPath or not Blackacre.UI.Theme.GetBodyFontPath() then
-        return text
+    local key = fontKey or Blackacre.UI.Theme.Fonts.activeKey
+    local row = key and CatalogRow(key)
+    if not row or not row.path or row.full then return text end
+    local last = row.ascii and FIRST_ASCII_SWAP - 1 or #BODY_SWAPS
+    for i = 1, last do
+        local swap = BODY_SWAPS[i]
+        text = text:gsub(swap[1], swap[2])
     end
-    -- Unicode / fancy punctuation
-    text = text:gsub("–", "-")
-    text = text:gsub("—", "-")
-    text = text:gsub("…", "...")
-    text = text:gsub("·", " - ")
-    text = text:gsub("•", "*")
-    text = text:gsub("“", "\"")
-    text = text:gsub("”", "\"")
-    text = text:gsub("‘", "'")
-    text = text:gsub("’", "'")
-    -- ASCII symbols that often become □ in script fonts → word-safe substitutes
-    text = text:gsub("|", " / ")
-    text = text:gsub("\\", "/")
-    text = text:gsub("%[", "(")
-    text = text:gsub("%]", ")")
-    text = text:gsub("%{", "(")
-    text = text:gsub("%}", ")")
-    text = text:gsub("<", "(")
-    text = text:gsub(">", ")")
-    text = text:gsub("~", "-")
-    text = text:gsub("`", "'")
-    text = text:gsub("@", " at ")
-    text = text:gsub("#", " no.")
-    text = text:gsub("%^", " ")
-    text = text:gsub("_", " ")
     return text
 end
 
@@ -1353,12 +2905,7 @@ function Blackacre.UI.Theme.ApplyRail(frame)
     local railAtlas = Blackacre.UI.Theme.PickAtlas({
         skin.tocTitleMid, skin.rail, "_Neutral-NineSlice-EdgeBottom",
     })
-    local info = C_Texture and C_Texture.GetAtlasInfo and C_Texture.GetAtlasInfo(railAtlas)
-    if info then
-        Blackacre.UI.Theme.TrySetAtlas(rail, railAtlas, false)
-    elseif not Blackacre.UI.Theme.TrySetAtlas(rail, railAtlas, false) then
-        rail:SetTexture("Interface\\QuestionFrame\\Warboard")
-    end
+    Blackacre.UI.Theme.TrySetAtlas(rail, railAtlas, false)
     -- Tiling used to draw the skin art at its native pixel width, which left
     -- a sliver of the tabBar's own backdrop color exposed at the edge for
     -- any skin whose art didn't evenly divide the bar's width. Stretching
@@ -1565,9 +3112,8 @@ function Blackacre.UI.Theme.ApplyFontListShell(frame)
     bg:ClearAllPoints()
     bg:SetPoint("TOPLEFT", 8, -8)
     bg:SetPoint("BOTTOMRIGHT", -8, 8)
-    if not SetNamedAtlas(bg, "GarrLanding-FollowerFrame") then
-        bg:SetColorTexture(0.1, 0.08, 0.06, 0.95)
-    end
+    -- Art missing from this client: no stand-in (TrySetAtlas left it clear).
+    SetNamedAtlas(bg, "GarrLanding-FollowerFrame")
     border:SetAllPoints(frame)
     local bw, bh = SetNamedAtlas(border, "QuestLog-frame")
     if not bw or bw <= 0 or bh <= 0 then
@@ -1706,12 +3252,108 @@ function Blackacre.UI.Theme.ApplyChromeInset(frame, pad)
     end
 end
 
+--- Paints an atlas onto a texture. Art this client doesn't have is never
+--- swapped for something else (owner rule, 2026-10-09): the texture is
+--- cleared and false comes back, so the element simply isn't drawn.
+--- SetAtlas itself doesn't fail on an unknown name, so the client is asked.
 function Blackacre.UI.Theme.TrySetAtlas(tex, atlas, useAtlasSize)
     if not tex or not atlas or not tex.SetAtlas then return false end
-    local ok = pcall(function()
-        tex:SetAtlas(atlas, useAtlasSize and true or false)
-    end)
+    if not C_Texture.GetAtlasInfo(atlas) then
+        tex:SetTexture(nil)
+        return false
+    end
+    local ok = pcall(tex.SetAtlas, tex, atlas, useAtlasSize and true or false)
     return ok
+end
+
+--- Tour art (owner-named, Pass B). The tour never holds a texture string itself.
+---   slot    Interface/HelpFrame/NewPlayerExperienceParts: green glow for small things
+---           (minimap button, tool buttons, survival icons). Blizzard draws it additive.
+---   card    Interface/Store/NewShop: for large bodies (Tool Box, Tome parts, editor fields).
+---   callout Interface/Glues/CharacterCreate/CharacterCreateTest: the text box.
+--- All sizes below are in the art's own pixels, measured from the BLP sheets in the
+--- Forever export. The same atlases on Retail 12.1 have the same sizes (the slot
+--- glow sits elsewhere on its sheet, which GetAtlasInfo handles). `scale` is how many screen units one art pixel is drawn as; the
+--- art is big, so it is drawn small. `w`/`h` are the atlas's size when measured.
+---   card: a clear-centred frame, ~7px border and a soft ~55px inner glow. `margin`
+---     is the corner size. noCenter keeps the target itself untinted.
+---   callout: 848x252, 36px soft glow round a 2px gold border, gradient inside, and
+---     a down-pointing arrow baked into the bottom edge. `cols`/`rows` are the grid
+---     lines of the nine pieces (the bottom row starts at the border line so the
+---     arrow isn't stretched with it). `arrow` is the strip cut out and drawn on its
+---     own, so it can sit on any edge and point at the target. borderY is the
+---     bottom border's row; `inset` is the glow width (border distance from the edge).
+Blackacre.UI.Theme.TourArt = {
+    -- outline: how far in from the atlas edge (as a fraction of its size) the white frame sits
+    -- (measured on the sheet: 36 of 152 px), so the tour can put that frame on the spotlight's edge.
+    slot = { atlas = "newplayertutorial-drag-slotgreen", blend = "ADD", outline = 0.238 },
+    card = { atlas = "card-large-new", margin = 64, scale = 0.22, noCenter = true },
+    callout = {
+        atlas = "charcreatetest-tutorialbox-class",
+        w = 848, h = 252, scale = 0.38, inset = 36,
+        cols = { 36, 44, 804, 812 }, -- starts at the border line: the art's own black shadow is left out
+        rows = { 36, 44, 183, 191 }, -- the middle stops above the arrow's arms (rows 184-188)
+        edgeX = { 100, 280 }, -- clear stretch of the bottom edge, left of the arrow
+        arrow = { x0 = 338, x1 = 508, y0 = 182, y1 = 252, borderY = 190, scale = 0.3 },
+    },
+}
+
+--- The glow Blizzard's own tutorial callouts wear: a gold halo with a bright core line,
+--- eight atlases (Interface/TutorialFrame/UIFrameTutorialGlow and ...GlowVertical).
+--- `d` is how far the core line sits inside the glow's outer edge, measured from the
+--- sheets (about 9px on every side), so the callout can line it up with its border.
+--- `scale` draws the glow larger than its art, which stretches the fade (raise it for a
+--- softer, wider halo; 1 is the art's own size).
+Blackacre.UI.Theme.TourGlow = {
+    d = 9,
+    scale = 1.6,
+    blend = "ADD", -- Blizzard draws this glow additively (TutorialFrame: backdropBorderBlendMode)
+    fade = 5,      -- art pixels at each piece's outer rim that fade to nothing (the art never does)
+    -- The top-right tile has its line ~1px further right than its mirror (bottom-right)
+    -- and the right edge; measured on screen at scale 1.6 it sat 1.4px out. Art pixels.
+    nudge = { TR = { x = -0.9, y = 0 } },
+    TL = "CalloutGlow-NineSlice-CornerTopLeft",
+    TR = "CalloutGlow-NineSlice-CornerTopRight",
+    BL = "CalloutGlow-NineSlice-CornerBottomLeft",
+    BR = "CalloutGlow-NineSlice-CornerBottomRight",
+    top = "_CalloutGlow-NineSlice-EdgeTop",
+    bottom = "_CalloutGlow-NineSlice-EdgeBottom",
+    left = "!CalloutGlow-NineSlice-EdgeLeft",
+    right = "!CalloutGlow-NineSlice-EdgeRight",
+}
+
+local GLOW_KEYS = { "TL", "TR", "BL", "BR", "top", "bottom", "left", "right" }
+
+--- The glow's atlases with their native size, file and texture coordinates:
+--- { d, scale, blend, fade, TL = { atlas, w, h, file, l, r, t, b }, ... }, or nil when
+--- this client is missing any of the eight.
+function Blackacre.UI.Theme.GetTourGlow()
+    local src = Blackacre.UI.Theme.TourGlow
+    local out = {
+        d = src.d * (src.scale or 1), scale = src.scale or 1,
+        blend = src.blend or "BLEND", fade = src.fade or 0, nudge = src.nudge or {},
+    }
+    for i = 1, #GLOW_KEYS do
+        local key = GLOW_KEYS[i]
+        local info = C_Texture and C_Texture.GetAtlasInfo and C_Texture.GetAtlasInfo(src[key])
+        local file = info and (info.filename or info.file)
+        if not file or (info.width or 0) <= 0 or (info.height or 0) <= 0 then return nil end
+        out[key] = {
+            atlas = src[key], w = info.width, h = info.height, file = file,
+            l = info.leftTexCoord or info.left or 0, r = info.rightTexCoord or info.right or 1,
+            t = info.topTexCoord or info.top or 0, b = info.bottomTexCoord or info.bottom or 1,
+        }
+    end
+    return out
+end
+
+--- Tour art for `kind` ("slot" / "card" / "callout"), or nil when this client lacks it.
+--- Returns the art row and its atlas info (file, texcoords, native size).
+function Blackacre.UI.Theme.GetTourArt(kind)
+    local art = Blackacre.UI.Theme.TourArt[kind]
+    local info = art and C_Texture and C_Texture.GetAtlasInfo and C_Texture.GetAtlasInfo(art.atlas)
+    if not info then return nil end
+    return art, info
 end
 
 --- Backdrop for a pannable tree viewport (B4F): the Mother talent tree art,
@@ -1730,22 +3372,158 @@ function Blackacre.UI.Theme.ApplyTreeBackground(viewport)
     end
     tex:ClearAllPoints()
     tex:SetPoint("CENTER", viewport, "CENTER", 0, 0)
-    -- SetAtlas doesn't fail loudly on an unknown name, so ask the client first.
-    local known = C_Texture and C_Texture.GetAtlasInfo and C_Texture.GetAtlasInfo(T.treeBackgroundAtlas)
-    if known and Blackacre.UI.Theme.TrySetAtlas(tex, T.treeBackgroundAtlas, false) then
+    if Blackacre.UI.Theme.TrySetAtlas(tex, T.treeBackgroundAtlas, false) then
         viewport._baTreeBgRotated = true
         tex:SetRotation(math.pi / 2)
         tex:SetSize(viewport:GetHeight(), viewport:GetWidth())
     else
+        -- Atlas missing: nothing is drawn (TrySetAtlas cleared it).
         viewport._baTreeBgRotated = false
-        -- Atlas missing: plain dark fill, never a guessed crop.
-        tex:SetColorTexture(0.05, 0.05, 0.08, 1)
-        tex:SetAllPoints(viewport)
         if Blackacre.Print then
             Blackacre.Print("Tree background atlas '" .. tostring(T.treeBackgroundAtlas) .. "' was not found in this client.")
         end
     end
     tex:Show()
+end
+
+--- Birthsign background: Theme.Textures.birthsignBackgroundAtlas, upright and
+--- cropped to cover the frame (never squashed). Owner-picked 2026-10-15 for the
+--- Backstory port; until it lands, /ba artpreview shows it.
+function Blackacre.UI.Theme.ApplyBirthsignBackground(frame)
+    if not frame then return end
+    local tex = frame._baBirthsignBg
+    if not tex then
+        tex = frame:CreateTexture(nil, "BACKGROUND", nil, -8)
+        tex:SetAllPoints(frame)
+        frame._baBirthsignBg = tex
+        frame:HookScript("OnSizeChanged", function(f, w, h)
+            Blackacre.UI.Theme.SetAtlasCover(f._baBirthsignBg,
+                Blackacre.UI.Theme.Textures.birthsignBackgroundAtlas, w, h)
+        end)
+    end
+    local w, h = frame:GetSize()
+    Blackacre.UI.Theme.SetAtlasCover(tex, Blackacre.UI.Theme.Textures.birthsignBackgroundAtlas, w, h)
+end
+
+--- Lineage background (owner, 2026-10-15): the Wrath credits painting of Grizzly
+--- Hills, which the game ships as eight 256x256 tiles, GrizzlyHills3TGA1..8
+--- (FileIDs 235680-235687). Blizzard's credits screen lays them four across and
+--- two down, 1-4 on top and 5-8 under them (CreditsFrame.xml: CreditsArt1..8,
+--- 256x256, Art5 anchored under Art1), so together they are one 1024x512 picture.
+--- `w`/`h` are the painting's own size, in case its right or bottom edge turns out
+--- to be padding: lower them and the last tiles are cut, not squashed.
+Blackacre.UI.Theme.LineageArt = {
+    path = "Interface\\Glues\\Credits\\GrizzlyHills3TGA",
+    cols = 4, rows = 2, tile = 256,
+    w = 1024, h = 512,
+}
+
+-- Lays the tiles out as one picture, scaled evenly to cover the frame and
+-- centred; the clip frame cuts off what hangs over (a frame doesn't clip its
+-- own textures, only its children's, so the tiles live on a child).
+local function LayoutLineageArt(frame)
+    local clip = frame._baLineageClip
+    if not clip then return end
+    local art = Blackacre.UI.Theme.LineageArt
+    local fw, fh = frame:GetSize()
+    if fw <= 0 or fh <= 0 then return end
+    local k = math.max(fw / art.w, fh / art.h)
+    local canvas = clip.canvas
+    canvas:SetSize(art.w * k, art.h * k)
+    local t = art.tile
+    for row = 1, art.rows do
+        for col = 1, art.cols do
+            local tex = clip.tiles[(row - 1) * art.cols + col]
+            local x0, y0 = (col - 1) * t, (row - 1) * t
+            local tw, th = math.min(t, art.w - x0), math.min(t, art.h - y0)
+            if tw > 0 and th > 0 then
+                tex:ClearAllPoints()
+                tex:SetPoint("TOPLEFT", canvas, "TOPLEFT", x0 * k, -y0 * k)
+                tex:SetSize(tw * k, th * k)
+                tex:SetTexCoord(0, tw / t, 0, th / t)
+                tex:Show()
+            else
+                tex:Hide()
+            end
+        end
+    end
+end
+
+function Blackacre.UI.Theme.ApplyLineageBackground(frame)
+    if not frame then return end
+    if not frame._baLineageClip then
+        local art = Blackacre.UI.Theme.LineageArt
+        -- Same level as the frame, so the frame's other children draw on top.
+        local clip = CreateFrame("Frame", nil, frame)
+        clip:SetAllPoints(frame)
+        clip:SetFrameLevel(frame:GetFrameLevel())
+        clip:SetClipsChildren(true)
+        clip:EnableMouse(false)
+        clip.canvas = CreateFrame("Frame", nil, clip)
+        clip.canvas:SetPoint("CENTER")
+        clip.tiles = {}
+        for i = 1, art.cols * art.rows do
+            local tex = clip.canvas:CreateTexture(nil, "BACKGROUND", nil, -8)
+            tex:SetTexture(art.path .. i, "CLAMP", "CLAMP")
+            clip.tiles[i] = tex
+        end
+        frame._baLineageClip = clip
+        frame:HookScript("OnSizeChanged", LayoutLineageArt)
+    end
+    LayoutLineageArt(frame)
+end
+
+local artPreview
+
+--- /ba artpreview: both pictures above in a test window, on the Quest Index
+--- template, so the owner can judge them by eye before the screens that use them
+--- arrive. The labels name the art, not the screens.
+function Blackacre.UI.Theme.ToggleArtPreview()
+    if artPreview then
+        artPreview:SetShown(not artPreview:IsShown())
+        return
+    end
+    local th = Blackacre.UI.Theme
+    local f = CreateFrame("Frame", "BlackacreArtPreview", UIParent, "BackdropTemplate")
+    f:SetSize(760, 330)
+    f:SetPoint("CENTER")
+    f:SetFrameStrata("HIGH")
+    f:SetMovable(true)
+    f:EnableMouse(true)
+    f:RegisterForDrag("LeftButton")
+    f:SetScript("OnDragStart", f.StartMoving)
+    f:SetScript("OnDragStop", f.StopMovingOrSizing)
+    f:SetClampedToScreen(true)
+    tinsert(UISpecialFrames, "BlackacreArtPreview")
+    Blackacre.UI.Focus.Register(f)
+    th.ApplyHeavyBronzeBase(f)
+
+    f.header = CreateFrame("Frame", nil, f)
+    f.header:SetPoint("TOPLEFT", 6, -6)
+    f.header:SetPoint("TOPRIGHT", -6, -6)
+    f.header:SetHeight(30)
+    local title = f.header:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
+    title:SetPoint("CENTER", 0, 9)
+    title:SetText("Art Preview")
+    th.GoldTitle(title)
+    local close = CreateFrame("Button", nil, f.header, "UIPanelCloseButton")
+    close:SetSize(22, 22)
+    close:SetPoint("RIGHT", 2, 8)
+    close:SetScript("OnClick", function() f:Hide() end) -- parent is the header, not f
+
+    local function Panel(label, w, x)
+        local p = CreateFrame("Frame", nil, f)
+        p:SetSize(w, 250)
+        p:SetPoint("TOPLEFT", f.header, "BOTTOMLEFT", x, -14)
+        local cap = p:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+        cap:SetPoint("TOP", p, "BOTTOM", 0, -4)
+        cap:SetText(label)
+        return p
+    end
+    th.ApplyBirthsignBackground(Panel("MOTHERtalenttree (cropped to fit)", 220, 14))
+    th.ApplyLineageBackground(Panel("GrizzlyHills3TGA 1-8, stitched 4 x 2", 480, 254))
+    artPreview = f
+    f:Show()
 end
 
 --- B2: the Backstory header card, at the atlas's own size, centered on the
@@ -1842,20 +3620,36 @@ function Blackacre.UI.Theme.ApplyTavernFrameBorder(frame)
     return host
 end
 
+local SHELL_FILL_INSET = 12 -- same inset the old flat backdrop used, inside the border
+
+local function PaintBookShellFill(frame)
+    local fill = frame._baShellFill
+    if not fill then return end
+    local w, h = frame:GetSize()
+    if Blackacre.UI.Theme.SetAtlasCover(fill, Blackacre.UI.Theme.Textures.tomeShellFillAtlas,
+        w - SHELL_FILL_INSET * 2, h - SHELL_FILL_INSET * 2) then
+        fill:Show()
+    else
+        fill:Hide()
+    end
+end
+
 --- Region 1: Alliance BFA mission NineSlice, pushed out so it sits around (not under) children.
+--- Under it, the shell's base picture (tomeShellFillAtlas) cropped to cover the window.
 function Blackacre.UI.Theme.ApplyBookShellChrome(frame)
     if not frame or not frame.SetBackdrop then return end
-    local T = Blackacre.UI.Theme.Textures
-    frame:SetBackdrop({
-        bgFile = T.white,
-        edgeFile = nil,
-        tile = true,
-        tileSize = 32,
-        edgeSize = 0,
-        insets = { left = 12, right = 12, top = 12, bottom = 12 },
-    })
-    local cover = Blackacre.UI.Theme.Colors.cover
-    frame:SetBackdropColor(cover[1], cover[2], cover[3], 0.97)
+    frame:SetBackdrop(nil)
+    local fill = frame._baShellFill
+    if not fill then
+        fill = frame:CreateTexture(nil, "BACKGROUND", nil, -8)
+        frame._baShellFill = fill
+        -- The crop depends on the window's shape: redo it when that changes.
+        frame:HookScript("OnSizeChanged", PaintBookShellFill)
+    end
+    fill:ClearAllPoints()
+    fill:SetPoint("TOPLEFT", SHELL_FILL_INSET, -SHELL_FILL_INSET)
+    fill:SetPoint("BOTTOMRIGHT", -SHELL_FILL_INSET, SHELL_FILL_INSET)
+    PaintBookShellFill(frame)
     if frame._baAchBorder then
         frame._baAchBorder:Hide()
     end
@@ -2232,30 +4026,268 @@ function Blackacre.UI.Theme.ApplyMetalShellBorder(frame)
     TrySetAtlas(right, "!UI-Frame-Metal-EdgeRight", true)
 end
 
---- Quest Index outer window base layer: heavybronze-frame-background stretched
---- full-bleed, in place of the flat "page" cream fill. No backdrop border —
---- ApplyMetalShellBorder draws the real TAV border on top of this.
---- The atlas comes from Forever's character-create art and isn't confirmed
---- on Retail yet; if the client doesn't know it, paint the same dark slate
---- the Quest Log list panel falls back to instead of leaving a hole.
+--- An inner panel inside a window (Garrison report border + follower-frame
+--- fill). The border is drawn on its own child frame at Textures.garrisonPanel
+--- .scale, laid out like Blizzard_GarrisonLandingPage.xml; the fill sits on
+--- `frame` under it. Content should live on a frame above the panel's level
+--- (`frame:GetFrameLevel() + 2` or more). Missing pieces are not drawn.
+function Blackacre.UI.Theme.ApplyGarrisonPanel(frame)
+    if not frame then return end
+    local P = Blackacre.UI.Theme.Textures.garrisonPanel
+    local TrySetAtlas = Blackacre.UI.Theme.TrySetAtlas
+    local inset = P.fillInset * P.scale
+
+    local fill = frame._baPanelFill or frame:CreateTexture(nil, "BACKGROUND", nil, -1)
+    frame._baPanelFill = fill
+    fill:ClearAllPoints()
+    fill:SetPoint("TOPLEFT", inset, -inset)
+    fill:SetPoint("BOTTOMRIGHT", -inset, inset)
+    TrySetAtlas(fill, P.fill, false)
+
+    local b = frame._baPanelBorder
+    if not b then
+        b = CreateFrame("Frame", nil, frame)
+        b:EnableMouse(false)
+        frame._baPanelBorder = b
+        local function piece(atlas)
+            local t = b:CreateTexture(nil, "BACKGROUND", nil, 2)
+            TrySetAtlas(t, atlas, true)
+            return t
+        end
+        b.tl, b.tr = piece(P.upperLeft), piece(P.upperRight)
+        b.bl, b.br = piece(P.lowerLeft), piece(P.lowerRight)
+        b.top, b.bottom = piece(P.top), piece(P.bottom)
+        b.left, b.right = piece(P.left), piece(P.right)
+        b.tl:SetPoint("TOPLEFT", -2, 1)
+        b.tr:SetPoint("TOPRIGHT", 0, 1)
+        b.bl:SetPoint("BOTTOMLEFT", -2, -2)
+        b.br:SetPoint("BOTTOMRIGHT", 0, -2)
+        b.top:SetPoint("TOPLEFT", b.tl, "TOPRIGHT", 0, -1)
+        b.top:SetPoint("TOPRIGHT", b.tr, "TOPLEFT", 0, -1)
+        b.bottom:SetPoint("BOTTOMLEFT", b.bl, "BOTTOMRIGHT", 0, 2)
+        b.bottom:SetPoint("BOTTOMRIGHT", b.br, "BOTTOMLEFT", 0, 2)
+        b.left:SetPoint("TOPLEFT", b.tl, "BOTTOMLEFT", 2, 0)
+        b.left:SetPoint("BOTTOMLEFT", b.bl, "TOPLEFT", 2, 0)
+        b.right:SetPoint("TOPRIGHT", b.tr, "BOTTOMRIGHT", 0, 0)
+        b.right:SetPoint("BOTTOMRIGHT", b.br, "TOPRIGHT", 0, 0)
+    end
+    -- Scaled child covering the same screen area as `frame`.
+    b:SetScale(P.scale)
+    b:SetAllPoints(frame)
+    b:SetFrameLevel((frame:GetFrameLevel() or 1) + 1)
+    return b
+end
+
+--- Paints `atlas` on `tex` at its own size; `sideways` turns it a quarter
+--- turn counter-clockwise (the art's top lands on the left, width and height
+--- swap), for vertical art used on a horizontal control. False when missing.
+function Blackacre.UI.Theme.PaintAtlas(tex, atlas, sideways)
+    if not Blackacre.UI.Theme.TrySetAtlas(tex, atlas, true) then return false end
+    tex:SetHorizTile(false)
+    tex:SetVertTile(false)
+    if sideways then
+        local i = C_Texture.GetAtlasInfo(atlas)
+        local l, r, t, b = i.leftTexCoord, i.rightTexCoord, i.topTexCoord, i.bottomTexCoord
+        -- corners: upper-left, lower-left, upper-right, lower-right
+        tex:SetTexCoord(r, t, l, t, r, b, l, b)
+        tex:SetSize(i.height, i.width)
+    end
+    return true
+end
+
+--- The quest log's frame border (backstoryQuestLogAtlas, "QuestLog-frame")
+--- around `region`, like Blizzard's QuestLogBorderFrameTemplate: stretched
+--- 3 px out at the sides, 7 above and 6 below, on its own frame `above`
+--- levels over `parent` so it overlaps the content's edge; no mouse.
+--- extraRight / extraBottom widen it for scroll bars hanging outside `region`.
+function Blackacre.UI.Theme.ApplyQuestLogBorder(parent, region, extraRight, extraBottom, above)
+    if not (parent and region) then return nil end
+    local b = parent._baQLFrame
+    if not b then
+        b = CreateFrame("Frame", nil, parent)
+        b:EnableMouse(false)
+        b.tex = b:CreateTexture(nil, "BORDER")
+        b.tex:SetAllPoints()
+        parent._baQLFrame = b
+    end
+    b:ClearAllPoints()
+    b:SetPoint("TOPLEFT", region, "TOPLEFT", -3, 7)
+    b:SetPoint("BOTTOMRIGHT", region, "BOTTOMRIGHT", (extraRight or 0) + 3, -(extraBottom or 0) - 6)
+    b:SetFrameLevel((parent:GetFrameLevel() or 1) + (above or 30))
+    Blackacre.UI.Theme.TrySetAtlas(b.tex, Blackacre.UI.Theme.Textures.backstoryQuestLogAtlas, false)
+    return b
+end
+
+--- Shell template: the inner-shadow vignette over a window's base, its edge
+--- touching the inner edge of the metal shell (ApplyMetalShellBorder uses the
+--- PortraitFrameTemplate corner layout, so Blizzard's Flight Map inset fits:
+--- 2 left, 22 top, 3 right, 2 bottom). It lives on its own frame `above`
+--- levels over the window so the shadow falls over the window's contents
+--- too; it takes no mouse. Returns the vignette frame (art missing: empty).
+function Blackacre.UI.Theme.ApplyShellVignette(frame, above)
+    if not frame then return nil end
+    local v = frame._baVignette
+    if not v then
+        v = CreateFrame("Frame", nil, frame)
+        v:EnableMouse(false)
+        v.tex = v:CreateTexture(nil, "ARTWORK")
+        v.tex:SetAllPoints()
+        frame._baVignette = v
+    end
+    v:ClearAllPoints()
+    v:SetPoint("TOPLEFT", 2, -22)
+    v:SetPoint("BOTTOMRIGHT", -3, 2)
+    v:SetFrameLevel((frame:GetFrameLevel() or 1) + (above or 40))
+    Blackacre.UI.Theme.TrySetAtlas(v.tex, Blackacre.UI.Theme.Textures.shellVignetteAtlas, false)
+    return v
+end
+
+--- Paints `atlas` on `tex` the way a photo fills a frame: scaled evenly until it
+--- covers w x h, with the overhang cut off by texture coordinates, so a
+--- landscape picture in a tall window keeps its shape instead of being squashed.
+--- Returns false (texture cleared) when the client lacks the atlas.
+--- The crop is drawn from the atlas's file with whole-file coordinates: after
+--- SetAtlas, Retail reads SetTexCoord inside the atlas's own box, which put the
+--- Birthsign titans off to one side (owner's screenshot, 2026-10-21).
+function Blackacre.UI.Theme.SetAtlasCover(tex, atlas, w, h)
+    if not Blackacre.UI.Theme.TrySetAtlas(tex, atlas, false) then return false end
+    local info = C_Texture.GetAtlasInfo(atlas)
+    if info.file then tex:SetTexture(info.file) end
+    if not w or w <= 0 or not h or h <= 0 or info.width <= 0 or info.height <= 0 then
+        return true -- no size yet: drawn whole until the next call
+    end
+    local k = math.max(w / info.width, h / info.height)
+    local wf, hf = w / (info.width * k), h / (info.height * k) -- visible fraction
+    local l, r = info.leftTexCoord, info.rightTexCoord
+    local t, b = info.topTexCoord, info.bottomTexCoord
+    local cu, cv = (l + r) / 2, (t + b) / 2
+    local hu, hv = (r - l) * wf / 2, (b - t) * hf / 2
+    tex:SetTexCoord(cu - hu, cu + hu, cv - hv, cv + hv)
+    return true
+end
+
+--- Lays plate `key` (Theme.Textures.plates) on `frame` the way a photo fills
+--- a frame: scaled evenly until it covers the frame's w x h, never squashed.
+--- What hangs over is trimmed by texture coordinates, keeping the plate's
+--- `focusX`/`focusY` (0-1 across its crop, default the middle) in view as far
+--- as the picture allows. One texture per file, butted edge to edge.
+--- If any file is missing from the client the whole plate is cleared and false
+--- comes back (a picture with a hole in it is not drawn); so does a nil `key`.
+--- `owner` (default `frame`) is the frame whose layers the tiles draw in: pass
+--- a parent to slide the picture under that parent's own art (a child frame
+--- always draws over its parent). The tiles still sit in `frame`'s box.
+--- `zoom` below 1 shows more of the picture: it is drawn that much smaller
+--- than the size that fills the box (never smaller than the whole picture),
+--- centred, so the box shows round it where the picture no longer reaches;
+--- above 1 it is drawn bigger. Given `focusX` and `focusY` (0-1 across the
+--- crop), the picture is placed freely instead (owner, 2026-10-22: a custom
+--- sign's picture is dragged to show a face): that point sits at the box's
+--- centre even if the picture's edge comes inside the box, and `zoom` has no
+--- floor. Returns true, the drawn width and height (the whole box when free),
+--- the scale (screen units per tile pixel), the focus in view, and the part
+--- of the box the picture covers: its top-left offset, width and height.
+function Blackacre.UI.Theme.SetPlate(frame, key, w, h, layer, sublevel, owner, zoom, focusX, focusY)
+    local plate = key and Blackacre.UI.Theme.Textures.plates[key]
+    local tiles = frame._baPlate
+    if not tiles then
+        tiles = {}
+        frame._baPlate = tiles
+    end
+    for _, tex in ipairs(tiles) do tex:Hide() end
+    if not plate then return false end
+    for _, path in ipairs(plate.files) do
+        if not GetFileIDFromPath(path) then return false end
+    end
+    local crop, size, cols = plate.crop, plate.tile, plate.cols
+    local cw, ch = crop.right - crop.left, crop.bottom - crop.top
+    local free = focusX ~= nil and focusY ~= nil
+    local k = math.max(w / cw, h / ch) * (zoom or 1)
+    if not free then k = math.max(math.min(w / cw, h / ch), k) end
+    frame:SetSize(w, h)
+    -- The drawn size and its offset in the box, then the part of the picture
+    -- in view, in the tiles' own pixels (free, the view is the whole box and
+    -- may reach past the picture; only the picture inside it is drawn).
+    local dw, dh, vx, vy, vw, vh
+    if free then
+        dw, dh = w, h
+        vw, vh = w / k, h / k
+        vx, vy = crop.left + cw * focusX - vw / 2, crop.top + ch * focusY - vh / 2
+    else
+        dw, dh = math.min(w, cw * k), math.min(h, ch * k)
+        vw, vh = dw / k, dh / k
+        vx = math.min(math.max(crop.left + cw * (plate.focusX or 0.5) - vw / 2, crop.left), crop.right - vw)
+        vy = math.min(math.max(crop.top + ch * (plate.focusY or 0.5) - vh / 2, crop.top), crop.bottom - vh)
+    end
+    local ox, oy = (w - dw) / 2, (h - dh) / 2
+    local colWidths = plate.colWidths
+    for i, path in ipairs(plate.files) do
+        local col = (i - 1) % cols
+        -- A column can be narrower than the tiles are tall (colWidths): its
+        -- files are that wide, so the slot is too.
+        local x0, sw = col * size, size
+        if colWidths then
+            x0 = 0
+            for c = 1, col do x0 = x0 + colWidths[c] end
+            sw = colWidths[col + 1]
+        end
+        local y0 = math.floor((i - 1) / cols) * size
+        local ix0, iy0 = math.max(x0, vx, crop.left), math.max(y0, vy, crop.top)
+        local ix1, iy1 = math.min(x0 + sw, vx + vw, crop.right), math.min(y0 + size, vy + vh, crop.bottom)
+        if ix1 > ix0 and iy1 > iy0 then
+            local tex = tiles[i]
+            if not tex then
+                tex = (owner or frame):CreateTexture(nil, layer or "ARTWORK", nil, sublevel or 0)
+                -- No snapping, so neighbouring tiles meet without a hairline seam.
+                tex:SetSnapToPixelGrid(false)
+                tex:SetTexelSnappingBias(0)
+                tiles[i] = tex
+            end
+            tex:SetTexture(path)
+            tex:SetTexCoord((ix0 - x0) / sw, (ix1 - x0) / sw, (iy0 - y0) / size, (iy1 - y0) / size)
+            tex:ClearAllPoints()
+            tex:SetPoint("TOPLEFT", frame, "TOPLEFT", ox + (ix0 - vx) * k, -(oy + (iy0 - vy) * k))
+            tex:SetSize((ix1 - ix0) * k, (iy1 - iy0) * k)
+            tex:Show()
+        end
+    end
+    -- The part of the box the picture covers (free, it may not fill the box).
+    local px0, py0 = math.max(vx, crop.left), math.max(vy, crop.top)
+    local pw = math.max(0, math.min(vx + vw, crop.right) - px0) * k
+    local ph = math.max(0, math.min(vy + vh, crop.bottom) - py0) * k
+    return true, dw, dh, k, (vx + vw / 2 - crop.left) / cw, (vy + vh / 2 - crop.top) / ch,
+        ox + (px0 - vx) * k, oy + (py0 - vy) * k, pw, ph
+end
+
+local BASE_INSET = 5 -- keeps the base inside the metal border's rounded corners
+
+local function PaintWindowBase(frame)
+    local bg = frame._baHeavyBronzeBg
+    if not bg then return end
+    local w, h = frame:GetSize()
+    Blackacre.UI.Theme.SetAtlasCover(bg, Blackacre.UI.Theme.Textures.questIndexBaseAtlas,
+        w - BASE_INSET * 2, h - BASE_INSET * 2)
+end
+
+--- Quest Index template, outer window base layer (questIndexBaseAtlas, the
+--- shop's teal map on Retail), cropped to cover the window. No backdrop
+--- border: ApplyMetalShellBorder draws the real TAV border on top of this.
+--- The name is Forever's (its base is heavybronze-frame-background), kept so
+--- the two repos' windows call the same function.
 function Blackacre.UI.Theme.ApplyHeavyBronzeBase(frame)
     if not frame then return end
-    local T = Blackacre.UI.Theme.Textures
     frame:SetBackdrop(nil)
 
     local bg = frame._baHeavyBronzeBg
     if not bg then
         bg = frame:CreateTexture(nil, "BACKGROUND", nil, -8)
         frame._baHeavyBronzeBg = bg
+        -- The crop depends on the window's shape: redo it when that changes.
+        frame:HookScript("OnSizeChanged", PaintWindowBase)
     end
     bg:ClearAllPoints()
-    bg:SetPoint("TOPLEFT", 5, -5)
-    bg:SetPoint("BOTTOMRIGHT", -5, 5)
-    if C_Texture.GetAtlasInfo(T.questIndexBaseAtlas) then
-        Blackacre.UI.Theme.TrySetAtlas(bg, T.questIndexBaseAtlas, false)
-    else
-        bg:SetColorTexture(0.12, 0.12, 0.14, 1)
-    end
+    bg:SetPoint("TOPLEFT", BASE_INSET, -BASE_INSET)
+    bg:SetPoint("BOTTOMRIGHT", -BASE_INSET, BASE_INSET)
+    PaintWindowBase(frame)
 
     Blackacre.UI.Theme.ApplyMetalShellBorder(frame)
 end
@@ -2311,8 +4343,9 @@ function Blackacre.UI.Theme.ApplyQuestLogListPanel(frame)
         bg:SetPoint("CENTER", clip)
         bg:SetRotation(math.pi / 2)
     else
+        -- Art missing from this client: nothing drawn, no stand-in.
         frame._baQLBgRotated = false
-        bg:SetColorTexture(0.12, 0.12, 0.14, 1)
+        bg:SetTexture(nil)
         bg:SetAllPoints(clip)
     end
     bg:Show()
@@ -2358,43 +4391,67 @@ function Blackacre.UI.Theme.UpdateProportionalScrollThumb(scrollFrame, contentFr
         h = math.max(minThumbH, math.min(trackH, trackH * (trackH / contentH)))
     end
     thumb:SetHeight(h)
-    thumb:SetAlpha(0)
+    Blackacre.UI.Theme.PaintScrollKnob(bar, thumb, false)
+end
 
-    local TrySetAtlas = Blackacre.UI.Theme.TrySetAtlas
+--- The proportional knob art (UI-ScrollBar-Knob-EndCap-Top/Bottom + a TILED
+--- UI-ScrollBar-Knob-Center) drawn over a slider's own thumb texture, which
+--- goes invisible but keeps dragging. `sideways` lays it along a horizontal
+--- slider (top cap on the left; the center tiles left to right). Pieces are
+--- made once and follow the thumb on every value change; call again after
+--- resizing the thumb.
+function Blackacre.UI.Theme.PaintScrollKnob(bar, thumb, sideways)
+    if not (bar and thumb) then return end
+    thumb:SetAlpha(0)
+    local Th = Blackacre.UI.Theme
     local top = bar._baThumbTop
     if not top then
         top = bar:CreateTexture(nil, "OVERLAY")
         bar._baThumbTop = top
-        TrySetAtlas(top, "UI-ScrollBar-Knob-EndCap-Top", true)
+        Th.PaintAtlas(top, "UI-ScrollBar-Knob-EndCap-Top", sideways)
     end
     local bot = bar._baThumbBot
     if not bot then
         bot = bar:CreateTexture(nil, "OVERLAY")
         bar._baThumbBot = bot
-        TrySetAtlas(bot, "UI-ScrollBar-Knob-EndCap-Bottom", true)
+        Th.PaintAtlas(bot, "UI-ScrollBar-Knob-EndCap-Bottom", sideways)
     end
     local mid = bar._baThumbMid
     if not mid then
         mid = bar:CreateTexture(nil, "OVERLAY")
         bar._baThumbMid = mid
-        TrySetAtlas(mid, "UI-ScrollBar-Knob-Center", true)
+        Th.TrySetAtlas(mid, "UI-ScrollBar-Knob-Center", true)
     end
 
     local function Reposition()
+        local info = C_Texture.GetAtlasInfo("UI-ScrollBar-Knob-Center")
         top:ClearAllPoints()
-        top:SetPoint("TOP", thumb, "TOP", 0, 0)
         bot:ClearAllPoints()
-        bot:SetPoint("BOTTOM", thumb, "BOTTOM", 0, 0)
-
-        local midH = math.max(1, (thumb:GetHeight() or 0) - (top:GetHeight() or 0) - (bot:GetHeight() or 0))
         mid:ClearAllPoints()
-        mid:SetPoint("TOP", top, "BOTTOM", 0, 0)
-        mid:SetPoint("LEFT", thumb, "LEFT", 0, 0)
-        mid:SetPoint("RIGHT", thumb, "RIGHT", 0, 0)
-        mid:SetHeight(midH)
-        local info = C_Texture and C_Texture.GetAtlasInfo and C_Texture.GetAtlasInfo("UI-ScrollBar-Knob-Center")
-        if info and info.height and info.height > 0 then
-            mid:SetTexCoord(0, 1, 0, midH / info.height)
+        if sideways then
+            top:SetPoint("LEFT", thumb, "LEFT", 0, 0)
+            bot:SetPoint("RIGHT", thumb, "RIGHT", 0, 0)
+            local midW = math.max(1, (thumb:GetWidth() or 0) - (top:GetWidth() or 0) - (bot:GetWidth() or 0))
+            mid:SetPoint("LEFT", top, "RIGHT", 0, 0)
+            mid:SetPoint("TOP", thumb, "TOP", 0, 0)
+            mid:SetPoint("BOTTOM", thumb, "BOTTOM", 0, 0)
+            mid:SetWidth(midW)
+            if info and info.height and info.height > 0 then
+                -- turned a quarter left, tiled along its length
+                local v = midW / info.height
+                mid:SetTexCoord(1, 0, 0, 0, 1, v, 0, v)
+            end
+        else
+            top:SetPoint("TOP", thumb, "TOP", 0, 0)
+            bot:SetPoint("BOTTOM", thumb, "BOTTOM", 0, 0)
+            local midH = math.max(1, (thumb:GetHeight() or 0) - (top:GetHeight() or 0) - (bot:GetHeight() or 0))
+            mid:SetPoint("TOP", top, "BOTTOM", 0, 0)
+            mid:SetPoint("LEFT", thumb, "LEFT", 0, 0)
+            mid:SetPoint("RIGHT", thumb, "RIGHT", 0, 0)
+            mid:SetHeight(midH)
+            if info and info.height and info.height > 0 then
+                mid:SetTexCoord(0, 1, 0, midH / info.height)
+            end
         end
     end
     Reposition()
@@ -2606,8 +4663,8 @@ function Blackacre.UI.Theme.ApplyNeutralTitleBar(frame)
 end
 
 --- Title bar (2F) and footer (11F). Owner-picked TopHUD strip per skin
---- (skin.hudBar = "plain" | "dis"); the old parchment backdrop is only a
---- fallback when that art is missing from the client.
+--- (skin.hudBar = "plain" | "dis"). If that art is missing from the client
+--- the bar has no art (the old parchment stand-in was removed, owner rule).
 -- Owner: 2F art drawn 4px thicker above and below the bar itself.
 -- 11F (footer) 4px more again (8), then nudged down so its top edge
 -- clears the 9S rail above it.
@@ -2620,6 +4677,13 @@ function Blackacre.UI.Theme.ApplyBookChromeBar(frame, which)
     if not frame or not frame.SetBackdrop then return end
     local skin = Blackacre.UI.Theme.GetActiveSkin and Blackacre.UI.Theme.GetActiveSkin()
     local h = frame:GetHeight()
+    if not Blackacre.UI.Theme.Textures.bookBarStrips then
+        -- Strips off: the shell picture shows behind the title and buttons.
+        local hud = frame._baHud
+        if hud then hud.l:Hide() hud.m:Hide() hud.r:Hide() end
+        frame:SetBackdrop(nil)
+        return
+    end
     if skin and skin.hudBar and h and h > 0 and ApplyHudStrip(frame, skin.hudBar, h, nil,
             which == "footer" and FOOTER_BAR_OUTSET or CHROME_BAR_OUTSET,
             which == "footer" and FOOTER_BAR_NUDGE_Y or 0,
@@ -2627,18 +4691,8 @@ function Blackacre.UI.Theme.ApplyBookChromeBar(frame, which)
         frame:SetBackdrop(nil)
         return
     end
-    frame:SetBackdrop({
-        bgFile = Blackacre.UI.Theme.Textures.parchment,
-        edgeFile = Blackacre.UI.Theme.Textures.tooltipEdge,
-        tile = false,
-        tileSize = 0,
-        edgeSize = 12,
-        insets = { left = 3, right = 3, top = 3, bottom = 3 },
-    })
-    local fill = (which == "footer") and Blackacre.UI.Theme.Colors.footerFill or Blackacre.UI.Theme.Colors.headerFill
-    frame:SetBackdropColor(fill[1], fill[2], fill[3], 0.98)
-    local eg = Blackacre.UI.Theme.Colors.edgeGold
-    frame:SetBackdropBorderColor(eg[1] * 0.85, eg[2] * 0.85, eg[3] * 0.85, 1)
+    -- Strip art missing from this client: no bar art at all, no stand-in.
+    frame:SetBackdrop(nil)
 end
 
 --- Small floating menus (sticky pin, add-note confirm) — one Theme path for edges.
@@ -2704,19 +4758,20 @@ local toastQueue = {}
 local toastBusy = false
 
 -- Scenario-style title banners. Survival / pre-Legion / unknown = evergreen.
--- atlas = TAV member; file = the Y in "X from Y" (used if GetAtlasInfo misses).
+-- atlas = TAV member. A kit whose atlas this client lacks shows its text
+-- with no banner art (owner rule: no stand-in for missing art).
 Blackacre.UI.Theme.ToastKits = {
-    evergreen    = { atlas = "evergreen-scenario-titlebg", file = "Interface\\Scenarios\\ScenarioEvergreen2x" },
-    alliance     = { atlas = "AllianceScenario-TitleBG", file = "Interface\\Scenarios\\ScenarioHordeAlliance" },
-    horde        = { atlas = "HordeScenario-TitleBG", file = "Interface\\Scenarios\\ScenarioHordeAlliance" },
-    dragonflight = { atlas = "dragonflight-scenario-TitleBG", file = "Interface\\Scenarios\\ScenarioDragonflight" },
-    warwithin    = { atlas = "thewarwithin-scenario-titlebg", file = "Interface\\Scenarios\\ScenarioTheWarWithin2x" },
-    midnight     = { atlas = "midnight-scenario-titlebg", file = "Interface\\Scenarios\\ScenarioMidnight2x" },
-    legion       = { atlas = "legioninvasion-title-bg", file = "Interface\\Scenarios\\LegionInvasion" },
-    maw          = { atlas = "jailerstower-scenario-TitleBG", file = "Interface\\Scenarios\\ScenarioJailerstower" },
-    kyrian       = { atlas = "kyrian-scenario-TitleBG", file = "Interface\\Scenarios\\ScenarioKyrian" },
-    revendreth   = { atlas = "EmberCourtScenario-TitleBG", file = "Interface\\Scenarios\\ScenarioEmberCourt" },
-    nzoth        = { atlas = "NzothScenario-TitleBG", file = "Interface\\Scenarios\\Scenario0Nzoth2x" },
+    evergreen    = { atlas = "evergreen-scenario-titlebg" },
+    alliance     = { atlas = "AllianceScenario-TitleBG" },
+    horde        = { atlas = "HordeScenario-TitleBG" },
+    dragonflight = { atlas = "dragonflight-scenario-TitleBG" },
+    warwithin    = { atlas = "thewarwithin-scenario-titlebg" },
+    midnight     = { atlas = "midnight-scenario-titlebg" },
+    legion       = { atlas = "legioninvasion-title-bg" },
+    maw          = { atlas = "jailerstower-scenario-TitleBG" },
+    kyrian       = { atlas = "kyrian-scenario-TitleBG" },
+    revendreth   = { atlas = "EmberCourtScenario-TitleBG" },
+    nzoth        = { atlas = "NzothScenario-TitleBG" },
     -- Owner-named Tome toast art (per skin, see TOME_TOAST_BY_SKIN). No
     -- whole-sheet file fallback on these: a missing atlas shows a flat banner.
     scholomance  = { atlas = "plunderstorm-toast-finish-lose", scale = 0.8 },     -- owner: 20% smaller             -- Interface/HUD/UIWoWLabsActionBar
@@ -2871,7 +4926,6 @@ local function ApplyToastBanner(f, kit)
     tex:ClearAllPoints()
     tex:SetAllPoints(f)
     local atlasName = spec.atlas
-    local file = spec.file
     if tex.SetHorizTile then tex:SetHorizTile(false) end
     if tex.SetVertTile then tex:SetVertTile(false) end
     local info = atlasName and C_Texture and C_Texture.GetAtlasInfo and C_Texture.GetAtlasInfo(atlasName)
@@ -2892,20 +4946,9 @@ local function ApplyToastBanner(f, kit)
         if spec.scale then w, h = w * spec.scale, h * spec.scale end
         return w, h, atlasName
     end
-    if atlasName and tex.SetAtlas then
-        local ok = pcall(function() tex:SetAtlas(atlasName, true) end)
-        if ok then
-            return tex:GetWidth() or 520, tex:GetHeight() or 84, atlasName
-        end
-    end
-    -- Last resort: the file you named (may be a whole sheet if atlas lookup failed).
-    if file then
-        tex:SetTexture(file)
-        tex:SetTexCoord(0, 1, 0, 1)
-        return 520, 84, file
-    end
-    tex:SetColorTexture(0.08, 0.07, 0.05, 0.92)
-    return 520, 84, "fallback"
+    -- The atlas isn't in this client: no banner art, just the toast's text.
+    tex:SetTexture(nil)
+    return 520, 84, "none"
 end
 
 local function EnsureToastFrame()
@@ -3225,11 +5268,13 @@ local BASE_LEVEL = 100 -- bottom window's level; the rest stack above it
 local WINDOW_GAP = 2
 local windows, known = {}, {} -- windows: back to front
 
--- Topmost registered window under the mouse, or nil.
+-- Topmost registered window under the mouse, or nil. A window with pieces
+-- hanging off its right edge (the Backstory side tabs) sets _baFocusReachRight
+-- so a click on them counts as a click on the window.
 local function WindowUnderMouse()
     for i = #windows, 1, -1 do
         local f = windows[i]
-        if f:IsShown() and f:IsMouseOver() then return f end
+        if f:IsShown() and f:IsMouseOver(0, 0, 0, f._baFocusReachRight or 0) then return f end
     end
     return nil
 end
@@ -3310,13 +5355,19 @@ watcher:SetScript("OnEvent", function()
     if top then BringToFront(top) end
 end)
 
-local function Window_OnShow(self)
+-- The window's show/hide is watched through a hidden child (a "sentinel")
+-- that only Focus owns: a child's OnShow/OnHide fire when its parent shows or
+-- hides. Hooking the window's own scripts broke whenever the window later
+-- called SetScript("OnShow"/"OnHide"), which silently dropped the hook (the
+-- Backstory window, Quest Index and Profile Backup all did), so the window
+-- opened behind the others with its pieces drawn over them.
+local function Sentinel_OnShow(self)
     -- A window that just opened sits in front.
-    BringToFront(self, true)
+    BringToFront(self.window, true)
     watcher:RegisterEvent("GLOBAL_MOUSE_DOWN")
 end
 
-local function Window_OnHide()
+local function Sentinel_OnHide()
     if not FrontmostShown() then watcher:UnregisterEvent("GLOBAL_MOUSE_DOWN") end
 end
 
@@ -3327,8 +5378,12 @@ function Blackacre.UI.Focus.Register(frame)
     frame:SetFrameStrata(WINDOW_STRATA)
     -- Not toplevel: the client would Raise() it on every click.
     frame:SetToplevel(false)
-    frame:HookScript("OnShow", Window_OnShow)
-    frame:HookScript("OnHide", Window_OnHide)
+    local sentinel = CreateFrame("Frame", nil, frame)
+    sentinel:SetSize(1, 1)
+    sentinel:SetPoint("TOPLEFT")
+    sentinel.window = frame
+    sentinel:SetScript("OnShow", Sentinel_OnShow)
+    sentinel:SetScript("OnHide", Sentinel_OnHide)
     if frame:IsShown() then watcher:RegisterEvent("GLOBAL_MOUSE_DOWN") end
     return frame
 end

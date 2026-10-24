@@ -69,8 +69,6 @@ local function DefaultCharDB()
             noticeTTLDays = 3,
             bulletinTTLDays = 3,
             quietNotifications = false,
-            yearKCBase = 42,
-            yearKCOffset = 0,
             promptEveryQuest = nil,
         },
         chronicle = {
@@ -105,7 +103,8 @@ local function DefaultCharDB()
             birthYearADP = nil,
             birthEraId = nil,
             birthPlace = "",
-            presentYearADP = Blackacre.Compat.PRESENT_ADP,
+            -- No presentYearADP: the present year follows the calendar
+            -- (Blackacre.YearCalendar.GetPresentADP).
             calendarDisplay = "AUTO",
             longevityProfile = "auto",
             originMode = "born",
@@ -136,31 +135,36 @@ end
 
 --- One-time pull from old "In Character" SavedVariables (if still present in WTF).
 --- TOC still lists InCharacterDB / InCharacterCharDB so Blizzard loads them for migration.
+--- Saved tables arrive after this file runs, so the defaults made below at
+--- file parse are ours until the game swaps in a saved table. The old data
+--- only moves into a table that holds nothing of the player's yet: a
+--- Blackacre save with data in it always wins.
+local parseDefaultDB, parseDefaultCharDB
+
+local function Unsaved(db, parseDefault)
+    return db == nil or db == parseDefault or next(db) == nil
+end
+
 local function MigrateFromInCharacter()
-    if type(InCharacterDB) == "table" and (not BlackacreDB or not BlackacreDB._migratedFromIC) then
-        -- Prefer old data when new table is empty/unmarked
-        local newEmpty = not BlackacreDB or not next(BlackacreDB) or (BlackacreDB.beacons and not next(BlackacreDB.beacons) and not BlackacreDB._migratedFromIC)
-        if newEmpty or not BlackacreDB._migratedFromIC then
-            BlackacreDB = InCharacterDB
-            BlackacreDB._migratedFromIC = true
-        end
+    if type(InCharacterDB) == "table" and Unsaved(BlackacreDB, parseDefaultDB) then
+        BlackacreDB = InCharacterDB
+        BlackacreDB._migratedFromIC = true
     end
-    if type(InCharacterCharDB) == "table" and (not BlackacreCharDB or not BlackacreCharDB._migratedFromIC) then
-        local newEmpty = not BlackacreCharDB or not next(BlackacreCharDB) or (BlackacreCharDB.chronicle and not BlackacreCharDB._migratedFromIC)
-        if newEmpty or not BlackacreCharDB._migratedFromIC then
-            BlackacreCharDB = InCharacterCharDB
-            BlackacreCharDB._migratedFromIC = true
-        end
+    if type(InCharacterCharDB) == "table" and Unsaved(BlackacreCharDB, parseDefaultCharDB) then
+        BlackacreCharDB = InCharacterCharDB
+        BlackacreCharDB._migratedFromIC = true
     end
 end
 
 MigrateFromInCharacter()
 
-BlackacreDB = BlackacreDB or DefaultAccountDB()
-BlackacreCharDB = BlackacreCharDB or DefaultCharDB()
-if not BlackacreDB._migratedFromIC and type(InCharacterDB) ~= "table" then
-    -- Fresh install under Blackacre name only
-    BlackacreDB._migratedFromIC = true
+if not BlackacreDB then
+    BlackacreDB = DefaultAccountDB()
+    parseDefaultDB = BlackacreDB
+end
+if not BlackacreCharDB then
+    BlackacreCharDB = DefaultCharDB()
+    parseDefaultCharDB = BlackacreCharDB
 end
 
 -- Ace mixins: events, comms, console, timer. AceBucket is not loaded (nothing registers a bucket).
@@ -1147,7 +1151,11 @@ SlashCmdList["BLACKACRE"] = function(msg)
     elseif msg == "backstory" then
         OpenBackstory(nil, "Backstory")
     elseif msg == "export profile" then
-        Blackacre.ExportProfileBackup()
+        Blackacre.ExportProfileBackup("full")
+    elseif msg == "export tome" then
+        Blackacre.ExportProfileBackup("tome")
+    elseif msg == "export backstory" and Blackacre.Backstory then
+        Blackacre.ExportProfileBackup("backstory")
     elseif msg == "backup" or msg == "backups" or msg == "restore" then
         Blackacre.Backup.ShowWindow()
     elseif msg == "export" then
@@ -1207,6 +1215,14 @@ SlashCmdList["BLACKACRE"] = function(msg)
         else
             Blackacre.Print("Theme skin guide not ready.")
         end
+    elseif msg == "helper" or msg == "tour" or msg == "help" then
+        if Blackacre.Options and Blackacre.Options.Open then
+            Blackacre.Options.Open("helper")
+        end
+    elseif msg == "tourart" then
+        if Blackacre.Tour and Blackacre.Tour.DebugArt then Blackacre.Tour.DebugArt() end
+    elseif msg == "artpreview" then
+        Blackacre.UI.Theme.ToggleArtPreview()
     elseif msg == "config" or msg == "options" or msg == "opt" then
         if Blackacre.Options and Blackacre.Options.Open then
             Blackacre.Options.Open()

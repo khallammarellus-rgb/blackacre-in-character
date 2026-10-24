@@ -83,6 +83,9 @@ function Blackacre.Chronicle.Hooks.Resolve(kind, facts, context)
         list = { list[facts.echelon] }
     elseif kind == "PVP" and type(list) == "table" and facts.outcome and type(list[facts.outcome]) == "string" then
         list = { list[facts.outcome] }
+    elseif (kind == "FRIENDSHIP" or kind == "RENOWN") and type(list) == "table"
+        and facts.variant and type(list[facts.variant]) == "string" then
+        list = { list[facts.variant] }
     end
     if type(list) ~= "table" or type(list[1]) ~= "string" then
         list = banks.DEFAULT or { "It is {yearKC} {month} and {day}, and I mark this moment today. . ." }
@@ -126,10 +129,21 @@ function Blackacre.Chronicle.Hooks.Resolve(kind, facts, context)
         lineName = facts.lineName or facts.questName or "an unnamed road",
         standingName = facts.standingName or "a new standing",
         factionName = facts.factionName or facts.name or "an unnamed people",
+        -- "the Council of Dornogal" and "the Assembly of the Deeps" (never "the
+        -- The"), but a place keeps its bare name: one-word names (Orgrimmar,
+        -- Gnomeregan) and Thunder Bluff, Silvermoon City, Booty Bay.
+        theFaction = (function()
+            local n = facts.factionName or facts.name
+            if not n or n == "" then return "an unnamed people" end
+            if n:find("^[Tt]he ") then return "the" .. n:sub(4) end
+            if not n:find(" ") or n:find(" City$") or n:find(" Bluff$") or n:find(" Bay$") then return n end
+            return "the " .. n
+        end)(),
         onePager = facts.onePager or facts.body or "",
         achievementName = facts.achievementName or facts.name or "an unnamed feat",
         titleName = facts.titleName or facts.name or "an untitled honor",
         skillName = facts.skillName or "their craft",
+        specName = facts.specName or "a path of my own",
         skillRank = facts.skillRank and tostring(facts.skillRank) or "a new rank",
         manualTitle = facts.manualTitle or facts.title or "a private note",
         manualBody = facts.manualBody or facts.body or "",
@@ -164,8 +178,19 @@ function Blackacre.Chronicle.Hooks.Resolve(kind, facts, context)
         title = facts.title or ((facts.factionName or "A people") .. ": " .. (facts.standingName or "new standing"))
     elseif kind == "TITLE" then
         title = facts.titleName or "Title gained"
+    elseif kind == "FRIENDSHIP" then
+        local who = facts.factionName or "A friend"
+        if facts.variant == "rank" and facts.standingName then
+            title = facts.title or (who .. ": " .. facts.standingName)
+        elseif facts.variant == "closest" then
+            title = facts.title or (who .. ": a true friend")
+        else
+            title = facts.title or (who .. ": closer than before")
+        end
+    elseif kind == "RENOWN" then
+        title = facts.title or ((facts.variant == "max" and "Renowned among " or "Known among ") .. slots.theFaction)
     elseif kind == "PROFESSION" then
-        title = (facts.skillName or "Profession") .. " advanced"
+        title = facts.title or ((facts.skillName or "Profession") .. " advanced")
     elseif kind == "WEAPON_SKILL" then
         title = "Mastered " .. (facts.skillName or "a weapon")
     elseif kind == "MANUAL" then

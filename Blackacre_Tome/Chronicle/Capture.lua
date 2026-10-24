@@ -4,9 +4,10 @@ Blackacre = Blackacre or {}
 Blackacre.Chronicle = Blackacre.Chronicle or {}
 Blackacre.Chronicle.Capture = {}
 
-local time, pcall, tostring = time, pcall, tostring
+local time, pcall, tostring, pairs, type = time, pcall, tostring, pairs, type
 local floor = math.floor
-local C_Timer = C_Timer
+local C_Timer, C_Reputation, C_GossipInfo = C_Timer, C_Reputation, C_GossipInfo
+local C_MajorFactions, C_ProfSpecs, C_TradeSkillUI = C_MajorFactions, C_ProfSpecs, C_TradeSkillUI
 
 local lastTitleIndex = nil
 local titleReady = false
@@ -315,42 +316,154 @@ local function CheckTitleChange()
     if idx then lastTitleIndex = idx end
 end
 
-local function ScanReputationBrackets()
+---------------------------------------------------------------------------
+-- Standings: reputations, friendships, renown
+---------------------------------------------------------------------------
+-- Retail has three kinds of standing, and each gets its own pages:
+--   * ordinary factions: a page at Friendly, Honored, Revered and Exalted
+--     (the reaction tiers 4-7);
+--   * friendships (Ve'nari, the Tillers, Brann...): named ranks from
+--     C_GossipInfo.GetFriendshipReputation / GetFriendshipReputationRanks.
+--     Their reaction tier never moves. A short ladder (8 ranks or fewer)
+--     writes a page at every rank past the first; a long one (Brann's
+--     levels) at each quarter of its top rank;
+--   * major factions (Renown): a page at each quarter of the top renown
+--     level, from MAJOR_FACTION_RENOWN_LEVEL_CHANGED. Their reaction tier
+--     never moves either, so the faction scan skips them.
+-- Each faction's last step is remembered, so nothing repeats. What the
+-- login scan finds (an account-wide reputation another character raised,
+-- or gains while the add-on was off) is only remembered, never written:
+-- a page is something this character lived through.
+
+local FRIEND_SHORT_LADDER = 8
+local FACTION_PLAIN, FACTION_FRIEND, FACTION_MAJOR = 1, 2, 3
+-- A faction's kind never changes; ask the game once per session.
+local factionKind = {}
+
+local function KindOfFaction(factionID)
+    local kind = factionKind[factionID]
+    if kind then return kind end
+    kind = FACTION_PLAIN
+    if C_Reputation.IsMajorFaction(factionID) then
+        kind = FACTION_MAJOR
+    else
+        local friend = C_GossipInfo.GetFriendshipReputation(factionID)
+        if friend and friend.friendshipFactionID and friend.friendshipFactionID > 0 then
+            kind = FACTION_FRIEND
+        end
+    end
+    factionKind[factionID] = kind
+    return kind
+end
+
+local function CheckFriendship(db, factionID, fallbackName, silent)
+    local ranks = C_GossipInfo.GetFriendshipReputationRanks(factionID)
+    local level, maxLevel = ranks and ranks.currentLevel, ranks and ranks.maxLevel
+    if not (level and maxLevel and maxLevel > 1) then return end
+    local long = maxLevel > FRIEND_SHORT_LADDER
+    local step = level
+    if long then
+        step = floor(4 * level / maxLevel)
+        if step > 4 then step = 4 end
+    end
+    db.friendStep = db.friendStep or {}
+    local prev = db.friendStep[factionID]
+    if prev and step <= prev then return end
+    db.friendStep[factionID] = step
+    if silent or not prev or (not long and level < 2) or (long and step < 1) then return end
+    local friend = C_GossipInfo.GetFriendshipReputation(factionID)
+    local name = (friend and friend.name) or fallbackName or ("Faction #" .. tostring(factionID))
+    local rankName = friend and friend.reaction
+    MakeEntry("FRIENDSHIP", {
+        factionId = factionID,
+        factionName = name,
+        name = name,
+        standingName = rankName,
+        -- A short ladder's ranks have real names ("Cordial"); a long one's are
+        -- often just levels, so only the short ladder names its rank.
+        title = (not long and rankName and rankName ~= "") and (name .. ": " .. rankName) or nil,
+        rank = level,
+        maxRank = maxLevel,
+        variant = (level >= maxLevel) and "closest" or (long and "closer" or "rank"),
+    })
+end
+
+local function CheckFaction(factionID, data, silent)
+    if not factionID then return end
+    local kind = KindOfFaction(factionID)
+    if kind == FACTION_MAJOR then return end
     local db = StoryDB()
+    if kind == FACTION_FRIEND then
+        CheckFriendship(db, factionID, data and data.name, silent)
+        return
+    end
+    data = data or C_Reputation.GetFactionDataByID(factionID)
+    local standingId = data and data.reaction
+    if not standingId then return end
     db.repStanding = db.repStanding or {}
+    local prev = db.repStanding[factionID]
+    db.repStanding[factionID] = standingId
+    local label = STANDING_NAME[standingId]
+    if not silent and label and prev and standingId > prev then
+        MakeEntry("REPUTATION", {
+            factionId = factionID,
+            factionName = data.name or ("Faction #" .. tostring(factionID)),
+            standingId = standingId,
+            standingName = label,
+            name = data.name,
+        })
+    end
+end
+
+-- Every faction the reputation list shows (collapsed headers hide theirs;
+-- FACTION_STANDING_CHANGED below covers those by id).
+local function ScanReputationBrackets(silent)
     local num = C_Reputation.GetNumFactions()
     if not num or num < 1 then return end
     for i = 1, num do
         local data = C_Reputation.GetFactionDataByIndex(i)
         if type(data) == "table" and not data.isHeader then
-            local factionId = data.factionID
-            local standingId = data.reaction
-            if factionId and standingId then
-                local prev = db.repStanding[factionId]
-                db.repStanding[factionId] = standingId
-                local label = STANDING_NAME[standingId]
-                if label and prev and standingId > prev then
-                    MakeEntry("REPUTATION", {
-                        factionId = factionId,
-                        factionName = data.name or ("Faction #" .. tostring(factionId)),
-                        standingId = standingId,
-                        standingName = label,
-                        name = data.name,
-                    })
-                end
-            end
+            CheckFaction(data.factionID, data, silent)
         end
     end
 end
 
--- Profession milestones by skill-ups. Retail has no trainer ranks: each
--- expansion has its own skill line ("Khaz Algar Tailoring", 1-100), and
--- GetProfessionInfo reports the newest one the character has learned (its
--- 11th return is that line's name, as Blizzard_ProfessionsBook reads it).
--- A quarter, half, three quarters and all of the line's cap each earn one
--- page, worded with the trade's plain name so no expansion name reaches the
--- page. Only the highest step is remembered per skill line, so a jump past a
--- threshold still counts and nothing repeats. Retail has no weapon skills.
+local function OnRenown(majorFactionID, newLevel, oldLevel)
+    if not (majorFactionID and newLevel) then return end
+    -- Journeys (Delver's Journey and the like) are seasonal tracks, not a people.
+    if C_MajorFactions.ShouldDisplayMajorFactionAsJourney(majorFactionID) then return end
+    local data = C_MajorFactions.GetMajorFactionData(majorFactionID)
+    local maxLevel = data and data.maxLevel
+    if not (maxLevel and maxLevel > 0) then return end
+    local step = floor(4 * newLevel / maxLevel)
+    if step > 4 then step = 4 end
+    local db = StoryDB()
+    db.renownStep = db.renownStep or {}
+    local prev = db.renownStep[majorFactionID] or floor(4 * (oldLevel or 0) / maxLevel)
+    if step <= prev then return end
+    db.renownStep[majorFactionID] = step
+    local isMax = newLevel >= maxLevel or C_MajorFactions.HasMaximumRenown(majorFactionID)
+    MakeEntry("RENOWN", {
+        factionId = majorFactionID,
+        factionName = data.name,
+        name = data.name,
+        renownLevel = newLevel,
+        maxLevel = maxLevel,
+        variant = isMax and "max" or "rising",
+    })
+end
+
+---------------------------------------------------------------------------
+-- Professions
+---------------------------------------------------------------------------
+-- Skill. Retail has no trainer ranks: each expansion has its own skill line
+-- ("Khaz Algar Tailoring", 1-100), and GetProfessionInfo reports the newest
+-- one the character has learned (its 11th return is that line's name, as
+-- Blizzard_ProfessionsBook reads it). A quarter, half, three quarters and
+-- all of the line's cap each earn one page, worded with the trade's plain
+-- name so no expansion name reaches the page. Only the highest step is
+-- remembered per skill line, so a jump past a threshold still counts and
+-- nothing repeats. Retail has no weapon skills.
 local PROFESSION_STEPS = { "apprentice", "journeyman", "expert", "artisan" }
 local professionSlots = {}
 
@@ -380,7 +493,111 @@ local function NoteProfessions(writeEntry)
     end
 end
 
--- Skill-ups fire SKILL_LINES_CHANGED in bursts; check once per burst.
+-- Specializations (Dragonflight onward): knowledge points spent in a skill
+-- line's specialization trees (C_ProfSpecs). Three moments per line, each
+-- written once: the trees open (SKILL_LINE_SPECS_UNLOCKED), the character
+-- commits to a tree (its tab becomes Unlocked), and a tree is finished
+-- (every path in it Completed). The game has no list of a character's spec
+-- lines outside the professions window, so lines are learned from the
+-- unlock event and from the window's open line, kept in
+-- chronicleStory.specLines, and each line is first scanned silently.
+local SPEC_TAB_UNLOCKED = (Enum.ProfessionsSpecTabState and Enum.ProfessionsSpecTabState.Unlocked) or 1
+local SPEC_PATH_COMPLETED = (Enum.ProfessionsSpecPathState and Enum.ProfessionsSpecPathState.Completed) or 2
+local SPEC_CHOSEN, SPEC_MASTERED = 1, 2
+
+-- The plain trade name ("Tailoring") for a base profession skill line.
+local function TradeName(tradeSkillID)
+    local s = professionSlots
+    s[1], s[2], s[3], s[4], s[5], s[6], s[7] = GetProfessions()
+    for slot = 1, 7 do
+        local idx = s[slot]
+        if idx then
+            local name, _, _, _, _, _, skillLine = GetProfessionInfo(idx)
+            if skillLine == tradeSkillID then return name end
+        end
+    end
+    local name = tradeSkillID and C_TradeSkillUI.GetTradeSkillDisplayName(tradeSkillID)
+    return (name and name ~= "") and name or nil
+end
+
+local function PathDone(pathID, configID)
+    if C_ProfSpecs.GetStateForPath(pathID, configID) ~= SPEC_PATH_COMPLETED then return false end
+    local kids = C_ProfSpecs.GetChildrenForPath(pathID)
+    for i = 1, (kids and #kids or 0) do
+        if not PathDone(kids[i], configID) then return false end
+    end
+    return true
+end
+
+local function ScanSpecLine(db, lineID, silent)
+    local configID = C_ProfSpecs.GetConfigIDForSkillLine(lineID)
+    if not configID or configID == 0 then return end
+    db.specTab = db.specTab or {}
+    local tabs = C_ProfSpecs.GetSpecTabIDsForSkillLine(lineID)
+    for i = 1, (tabs and #tabs or 0) do
+        local tab = tabs[i]
+        local reached = 0
+        if C_ProfSpecs.GetStateForTab(tab, configID) == SPEC_TAB_UNLOCKED then
+            reached = SPEC_CHOSEN
+            local root = C_ProfSpecs.GetRootPathForTab(tab)
+            if root and PathDone(root, configID) then reached = SPEC_MASTERED end
+        end
+        local prev = db.specTab[tab]
+        if prev == nil or reached > prev then
+            db.specTab[tab] = reached
+            if not silent and prev ~= nil and reached > 0 then
+                local info = C_ProfSpecs.GetTabInfo(tab)
+                local specName = info and info.name
+                MakeEntry("PROFESSION", {
+                    skillName = db.specLines[lineID],
+                    specName = specName,
+                    title = (reached == SPEC_MASTERED and "Mastered " or "Chose ") .. (specName or "a specialization"),
+                    echelon = reached == SPEC_MASTERED and "specMastered" or "specChosen",
+                })
+            end
+        end
+    end
+end
+
+-- The line the professions window has open, if it has specializations.
+local function LearnOpenSpecLine(db)
+    local info = C_TradeSkillUI.GetChildProfessionInfo()
+    local lineID = info and info.professionID
+    if not lineID or lineID == 0 or db.specLines[lineID] then return end
+    if not C_ProfSpecs.SkillLineHasSpecialization(lineID) then return end
+    db.specLines[lineID] = info.parentProfessionName or TradeName(info.parentProfessionID) or info.professionName
+    ScanSpecLine(db, lineID, true)
+end
+
+local function SpecDB()
+    local db = StoryDB()
+    db.specLines = db.specLines or {}
+    db.specOpened = db.specOpened or {}
+    return db
+end
+
+local function ScanAllSpecLines(silent)
+    local db = SpecDB()
+    for lineID in pairs(db.specLines) do ScanSpecLine(db, lineID, silent) end
+end
+
+local function OnSpecsUnlocked(lineID, tradeSkillID)
+    if not lineID then return end
+    local db = SpecDB()
+    local name = TradeName(tradeSkillID)
+    db.specLines[lineID] = db.specLines[lineID] or name or "my craft"
+    ScanSpecLine(db, lineID, true)
+    if db.specOpened[lineID] then return end
+    db.specOpened[lineID] = true
+    MakeEntry("PROFESSION", {
+        skillName = db.specLines[lineID],
+        title = (name or "My craft") .. ": a path opens",
+        echelon = "specUnlocked",
+    })
+end
+
+-- Skill-ups fire SKILL_LINES_CHANGED in bursts; check once per burst. Spec
+-- point spending (SKILL_LINE_SPECS_RANKS_CHANGED) is batched the same way.
 local skillCheckPending = false
 local function ScheduleSkillCheck()
     if skillCheckPending then return end
@@ -391,9 +608,20 @@ local function ScheduleSkillCheck()
     end)
 end
 
+local specCheckPending = false
+local function ScheduleSpecCheck()
+    if specCheckPending then return end
+    specCheckPending = true
+    C_Timer.After(1, function()
+        specCheckPending = false
+        LearnOpenSpecLine(SpecDB())
+        ScanAllSpecLines(false)
+    end)
+end
+
 local function RunRepScan()
     repScanPending = false
-    ScanReputationBrackets()
+    ScanReputationBrackets(false)
 end
 
 function Blackacre.Chronicle.Capture.Init()
@@ -405,15 +633,22 @@ function Blackacre.Chronicle.Capture.Init()
     frame:RegisterEvent("ACHIEVEMENT_EARNED")
     frame:RegisterEvent("KNOWN_TITLES_UPDATE")
     frame:RegisterEvent("UPDATE_FACTION")
+    frame:RegisterEvent("FACTION_STANDING_CHANGED")
+    frame:RegisterEvent("MAJOR_FACTION_RENOWN_LEVEL_CHANGED")
+    frame:RegisterEvent("SKILL_LINE_SPECS_UNLOCKED")
+    frame:RegisterEvent("SKILL_LINE_SPECS_RANKS_CHANGED")
+    frame:RegisterEvent("TRADE_SKILL_SHOW")
+    frame:RegisterEvent("TRADE_SKILL_DATA_SOURCE_CHANGED")
     frame:RegisterUnitEvent("UNIT_NAME_UPDATE", "player")
     frame:SetScript("OnEvent", function(_, event, ...)
         if event == "PLAYER_LOGIN" then
             lastTitleIndex = GetCurrentTitle()
             titleReady = true
-            C_Timer.After(3, ScanReputationBrackets)
+            C_Timer.After(3, function() ScanReputationBrackets(true) end)
             C_Timer.After(4, function()
                 -- Remember where skills already stand, silently.
                 NoteProfessions(false)
+                ScanAllSpecLines(true)
                 professionReady = true
             end)
         elseif event == "SKILL_LINES_CHANGED" then
@@ -429,6 +664,19 @@ function Blackacre.Chronicle.Capture.Init()
             if repScanPending then return end
             repScanPending = true
             C_Timer.After(2, RunRepScan)
+        elseif event == "FACTION_STANDING_CHANGED" then
+            -- One faction by id, so factions under collapsed headers count too.
+            CheckFaction((...), nil, false)
+        elseif event == "MAJOR_FACTION_RENOWN_LEVEL_CHANGED" then
+            OnRenown(...)
+        elseif event == "SKILL_LINE_SPECS_UNLOCKED" then
+            OnSpecsUnlocked(...)
+        elseif event == "SKILL_LINE_SPECS_RANKS_CHANGED" then
+            if professionReady then ScheduleSpecCheck() end
+        elseif event == "TRADE_SKILL_SHOW" or event == "TRADE_SKILL_DATA_SOURCE_CHANGED" then
+            -- The window's open line becomes known (silently) before any
+            -- points are spent in it.
+            LearnOpenSpecLine(SpecDB())
         end
     end)
 end

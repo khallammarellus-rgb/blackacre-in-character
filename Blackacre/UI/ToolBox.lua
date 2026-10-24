@@ -304,9 +304,8 @@ local function PaintBackground(frame, fw, fh)
         local cu, cv = (l + r) / 2, (t + b) / 2
         local hu, hv = (r - l) * wf / 2, (b - t) * hf / 2
         bg:SetTexCoord(cu - hu, cu + hu, cv - hv, cv + hv)
-    else
-        bg:SetColorTexture(0.1, 0.09, 0.08, 0.95)
     end
+    -- Art missing from this client: no background drawn, no stand-in.
 end
 
 local function PaintFrame(frame)
@@ -384,6 +383,14 @@ function Blackacre.ToolBox.Toggle()
     else
         for _, b in ipairs(buttons) do PaintToggle(b) end
         frame:Show()
+    end
+end
+
+--- The slot button for a tool ("beacon", "bulletin", ...), for the tour to spotlight.
+function Blackacre.ToolBox.GetButton(id)
+    if not frame then Build() end
+    for _, b in ipairs(buttons) do
+        if b.id == id then return b end
     end
 end
 

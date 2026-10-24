@@ -3,7 +3,7 @@
 Blackacre = Blackacre or {}
 Blackacre.Compat = {}
 
-local GetBuildInfo, GetRealmName, tonumber = GetBuildInfo, GetRealmName, tonumber
+local GetBuildInfo, GetRealmName, tonumber, date = GetBuildInfo, GetRealmName, tonumber, date
 
 local cached
 
@@ -36,6 +36,15 @@ function Blackacre.Compat.GetProfileScope()
     return "Realm"
 end
 
---- Present year: The War Within and after, 42 years after the Dark Portal
---- (the value the Retail build used before the Forever split).
-Blackacre.Compat.PRESENT_ADP = 42
+-- The story's present year follows the real calendar (owner rule): 2026 is
+-- 42 ADP (634 K.C.), and each 1 January moves it on one, so 2027 is 43 ADP
+-- (635 K.C.). The realm's calendar decides the date, the same one journal
+-- stamps use for month and day; the computer clock is the fallback.
+local PRESENT_BASE_ADP, PRESENT_BASE_YEAR = 42, 2026
+
+--- The present year in ADP, from today's date.
+function Blackacre.Compat.PresentADP()
+    local t = C_DateAndTime and C_DateAndTime.GetCurrentCalendarTime and C_DateAndTime.GetCurrentCalendarTime()
+    local year = t and t.year or tonumber(date("%Y"))
+    return PRESENT_BASE_ADP + ((year or PRESENT_BASE_YEAR) - PRESENT_BASE_YEAR)
+end

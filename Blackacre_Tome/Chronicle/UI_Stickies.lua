@@ -296,9 +296,8 @@ local function BuildStickyCard(parent)
     if card.SetBackdrop then card:SetBackdrop(nil) end
     local pane = card:CreateTexture(nil, "BACKGROUND")
     pane:SetAllPoints(card)
-    if not TryAtlas(pane, "adventureguide-pane-small", false) then
-        pane:SetColorTexture(0.97, 0.93, 0.82, 0.95)
-    end
+    -- Art missing from this client: no stand-in (TryAtlas leaves it clear).
+    TryAtlas(pane, "adventureguide-pane-small", false)
     card.pane = pane
     card:EnableMouse(true)
     card:SetMovable(true)
@@ -527,8 +526,7 @@ function Blackacre.Chronicle.UI.BeginPinMode()
         pinModeFrame:SetAllPoints(UIParent)
         pinModeFrame:SetFrameStrata("FULLSCREEN_DIALOG")
         pinModeFrame:EnableMouse(true)
-        local pinCursor = (Theme() and Theme().Textures and (Theme().Textures.mapPinCursor or Theme().Textures.mapPinCursorCross))
-            or "Interface\\Cursor\\MapPinCursor"
+        local pinCursor = Theme().Textures.mapPinCursor
         -- The client resets the cursor every frame while this overlay is shown. No pcall on that path.
         pinModeFrame:SetScript("OnUpdate", function()
             if pinModeActive and SetCursor then

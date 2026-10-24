@@ -34,6 +34,8 @@ local KIND_LABELS = {
     META_ACHIEVEMENT = "Meta feat",
     FOS = "Feat of Strength",
     REPUTATION = "Standing",
+    FRIENDSHIP = "Friendship",
+    RENOWN = "Renown",
     ACHIEVEMENT = "Feat",
     TITLE = "Title",
     PROFESSION = "Craft",
@@ -318,9 +320,10 @@ local function PrepareMeasure(entry)
     return measureFS, w, h
 end
 
-local function TextFits(fs, text, avail)
+-- fontKey: the page's own font, so the text is measured exactly as it will be drawn.
+local function TextFits(fs, text, avail, fontKey)
     local sanitize = Blackacre.UI.Theme.SanitizeBodyText
-    fs:SetText(sanitize and sanitize(text) or text)
+    fs:SetText(sanitize and sanitize(text, fontKey) or text)
     return (fs:GetStringHeight() or 0) <= avail
 end
 
@@ -339,14 +342,14 @@ local function SplitBodyForPages(body, out, entry)
         if fs then
             local top = LEAF.TOP + (first and (LEAF.TITLE_H + LEAF.META_H) or LEAF.CONT_H)
             local avail = leafH - top - LEAF.BODY_BOTTOM - LEAF.BODY_INSET - 2   -- 2 px spare for rounding
-            if TextFits(fs, body:sub(start, len), avail) then
+            if TextFits(fs, body:sub(start, len), avail, entry and entry.fontKey) then
                 cut = len
             else
                 -- Most text that fits; at least one character, so every leaf moves on.
                 local lo, hi = start, len - 1
                 while lo < hi do
                     local mid = math.floor((lo + hi + 1) / 2)
-                    if TextFits(fs, body:sub(start, mid), avail) then lo = mid else hi = mid - 1 end
+                    if TextFits(fs, body:sub(start, mid), avail, entry and entry.fontKey) then lo = mid else hi = mid - 1 end
                 end
                 cut = lo
             end
@@ -1125,6 +1128,8 @@ end
 local function PlaceTocLine(btn, ly, titleText, pageStr)
     local th = Theme()
     local applyFont = th and th.ApplyReadableBodyFont
+    -- Titles are drawn in the journal font too: same missing-mark swaps as the body.
+    if th and th.SanitizeBodyText and titleText then titleText = th.SanitizeBodyText(titleText) end
 
     if not pageStr then
         local label = NextRowFS(btn)
@@ -1207,9 +1212,8 @@ local function BuildTocRow(host)
     local hl = btn:CreateTexture(nil, "HIGHLIGHT")
     hl:SetPoint("TOPLEFT", btn, "TOPLEFT", 0, 4)
     hl:SetPoint("BOTTOMRIGHT", btn, "BOTTOMRIGHT", 0, 4)
-    if not TryAtlas(hl, "Garr_ListButton-Selection", false) then
-        hl:SetColorTexture(0.90, 0.78, 0.35, 0.18)
-    elseif hl.SetBlendMode then
+    -- No stand-in if the client lacks the art (owner rule): no highlight then.
+    if TryAtlas(hl, "Garr_ListButton-Selection", false) and hl.SetBlendMode then
         hl:SetBlendMode("ADD")
     end
     btn:SetHighlightTexture(hl)
@@ -1228,9 +1232,7 @@ local function BuildTocTitle(host)
     ribbon:SetAllPoints(bar)
     if ribbon.SetHorizTile then ribbon:SetHorizTile(false) end
     if ribbon.SetVertTile then ribbon:SetVertTile(false) end
-    if not TryAtlas(ribbon, "UI-Frame-Alliance-Ribbon", false) then
-        TryAtlas(ribbon, "UI-Frame-Dragonflight-Ribbon", false)
-    end
+    TryAtlas(ribbon, "UI-Frame-Alliance-Ribbon", false)
     bar.title = bar:CreateFontString(nil, "OVERLAY", "BlackacreFont_GameFontNormalLarge")
     bar.title:SetPoint("CENTER", 0, 1)
     bar.title:SetTextColor(1, 0.92, 0.55, 1)
@@ -2089,7 +2091,7 @@ local function RenderEntryLeaf(host, leafData, leafSide)
 
     local bodyText = leafData.bodyPart or entry.body or ""
     if Blackacre.UI.Theme.SanitizeBodyText then
-        bodyText = Blackacre.UI.Theme.SanitizeBodyText(bodyText)
+        bodyText = Blackacre.UI.Theme.SanitizeBodyText(bodyText, entry.fontKey)
     end
     bodyEdit:SetText(bodyText)
     -- Per-page size/font from the Journaling toolbar (nil = Tome-wide defaults).
@@ -2272,6 +2274,7 @@ local function MountToolsOnParentFooter()
     b:SetHeight(26)
     b:SetPoint("LEFT", 0, 0)
     b:SetText("Quest Index")
+    hub.questIndexBtn = b -- the tour spotlights it
     FitButtonWidth(b, 110)
     b:SetScript("OnClick", function()
         if Theme() and Theme().PlayUISound then Theme().PlayUISound("toolClick") end

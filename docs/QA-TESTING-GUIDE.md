@@ -90,15 +90,57 @@ Use after any change to saved data, and before releasing an update. Open the Bac
 ---
 
 ### Suite E: Retail Client
-Use after a game patch, a TOC interface bump, or any change to profiles, professions, comms or the Quest Index import.
+Use after a game patch, a TOC interface bump, or any change to profiles, professions, reputation, the calendar, comms or the Quest Index import.
 
 | # | Check | Standard Criteria | Pass? |
 |---|-------|-------------------|:-----:|
 | **E1** | Not Out Of Date | Character select → AddOns: the four **In Character** entries load without "Load out of date AddOns" | [ ] |
 | **E2** | Own Profile Per Realm | `/ba storage` shows `profile=<name> - <realm>`. Two characters with the same name on different realms each keep their own journal | [ ] |
-| **E3** | Profession Pages | A profession passing a quarter, half, three quarters or all of its skill cap writes one first-person page that names the trade plainly (no expansion name) | [ ] |
-| **E4** | Earlier Quests Import | Quest Index → Import earlier quests finishes without a freeze and adds no `Quest #12345` rows; hidden quest records are counted and left out | [ ] |
+| **E3** | Profession Pages | A profession passing a quarter, half, three quarters or all of its skill cap writes one first-person page that names the trade plainly (no expansion name). Specializations: the trees opening, a tree chosen and a tree finished each write one page | [ ] |
+| **E4** | Earlier Quests Import | Quest Index → Import Quests brings in every finished quest, however many: it says how long it will take, reports progress, never freezes the game, and the list still scrolls smoothly afterwards | [ ] |
 | **E5** | Lockdown Is Quiet | During a boss fight or a Mythic+ key, with beacons on and whispers coming in: zero Lua errors | [ ] |
+| **E6** | Friendships And Renown | A friendship rank-up (a Ve'nari-style NPC) writes one page naming the rank; a renown level crossing a quarter of the track writes one page; logging in after another character raised an account-wide reputation writes nothing | [ ] |
+| **E7** | The Year | A new page in 2026 says 42 ADP (Horde) or 634 K.C. (Alliance); from 1 January 2027, 43 ADP or 635 K.C. Older pages keep their own year | [ ] |
+| **E8** | Window Base Art | Quest Index, Beacon editor, Bulletin editor, Yellow Pages, a notice you open at an inn, My Postings and `/ba restore`: each window's background is the teal map, never blank, never squashed (a tall window shows a slice of the map at its normal shape) | [ ] |
+| **E9** | Eating In A Boss Fight | During a boss fight or Mythic+ key, cast abilities and use a healthstone or potion: zero Lua errors from Survival | [ ] |
+
+---
+
+### Suite F: Survival & Death
+Use after any change to the survival meters. Note the three stack numbers before you start.
+
+| # | Check | Standard Criteria | Pass? |
+|---|-------|-------------------|:-----:|
+| **F1** | Spirit Form Appears | Die: a Spirit Form icon with a yellow-brown (disease) border appears after Exposure; the Prepared icon hides | [ ] |
+| **F2** | Meters Paused | Stay dead or a ghost for 3+ minutes: none of the three numbers move | [ ] |
+| **F3** | Spirit Tooltips | While dead, hovering Hunger, Thirst or Exposure reads "You are in spirit form" (no climate, no "Resting" line); hovering Spirit Form explains the pause | [ ] |
+| **F4** | Return To Body | Take a res (spirit healer, corpse run, or a player's res): Hunger and Thirst read 0, Exposure is where it stopped, one toast "You return to your body hungry and parched", Spirit Form icon gone | [ ] |
+| **F5** | Exposure Resumes | A minute after F4, Exposure drops again at the zone's normal rate | [ ] |
+| **F6** | Ghost Across A Reload | As a ghost, `/reload`: Spirit Form is still there and the meters still don't move | [ ] |
+| **F7** | Feign Death (Hunter) | Feign Death and stand up: no Spirit Form icon, meters untouched | [ ] |
+| **F8** | Cozy Fire | Light a Basic Campfire (Cooking) and stand by it. If a "Cozy Fire" buff appears, Exposure climbs 1 every 5 seconds and the tooltip reads "By the fire: recovering". If no such buff appears on Retail, tell me the buff's name, if any | [ ] |
+| **F9** | Leaving The Fire | Walk away from the fire: Exposure stops climbing within a few seconds and starts to drop again | [ ] |
+| **F10** | Eating | Eat any food: Hunger goes to 100 the moment you sit and eat | [ ] |
+| **F11** | Food Tiers | `/ba survival scan` lists each food and water with its tier (1-6) and the level it needs. Food made for your level is tier 6; old low-level food is tier 1. Hovering Prepared shows "hunger drains N% slower" (10/15/20/25/30/35) for the best one you can eat | [ ] |
+| **F12** | Too Young To Eat | Carry only food above your level: Prepared doesn't count it (scan says 0% slower) | [ ] |
+| **F13** | Well Fed | Eat a buff food for 10+ seconds: Hunger tooltip reads "Well Fed: hunger holds steady" and the number doesn't drop until the buff ends | [ ] |
+| **F14** | Drinking | Sit and drink: Thirst climbs about 1 a second; Thirst tooltip reads "Drinking: recovering" | [ ] |
+| **F15** | Finish The Drink | Drink until the drink ends by itself: Thirst jumps to 100 | [ ] |
+| **F16** | Stand Up Early | Stand up mid-drink: Thirst keeps what it gained, no jump to 100 | [ ] |
+
+---
+
+### Suite G: Helper Tour & Settings
+Use after any change to the tour, its steps or the Settings window.
+
+| # | Check | Standard Criteria | Pass? |
+|---|-------|-------------------|:-----:|
+| **G1** | First-Login Offer | `/run Blackacre.CharDB.tour = nil` then `/reload`: about 8 seconds later a popup offers the tour ("Welcome to In Character."). It never shows again after any answer | [ ] |
+| **G2** | Full Tour | `/ba helper` → Full tour: the screen dims, each part is lit in turn (minimap button, Tool Box, Tome, Quest Index, notes, bookmarks, Add page, Beacon, Bulletin, the Survival meters) with a callout and an arrow pointing at it | [ ] |
+| **G3** | One Part | Settings → Helper: each part's button runs just that part; a part whose add-on is off is greyed | [ ] |
+| **G4** | Keys | During a tour: Right/Enter/Space = next, Left = back, Escape = stop. The windows the tour opened close again when it ends | [ ] |
+| **G5** | Combat Ends It | Start a tour next to a hostile mob and let it attack you: the tour closes at once and your keybinds work in the fight | [ ] |
+| **G6** | Settings Layout | `/ba config`: every section (General, Journal Settings, Helper, Credits...) is an entry in the left-hand list, and the window is a little larger than before | [ ] |
 
 ---
 

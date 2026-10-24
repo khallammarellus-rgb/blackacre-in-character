@@ -3,7 +3,6 @@
 Blackacre = Blackacre or {}
 Blackacre.YearCalendar = {}
 Blackacre.YearCalendar.PORTAL_YEAR_KC = 592
-Blackacre.YearCalendar.DEFAULT_PRESENT_ADP = Blackacre.Compat.PRESENT_ADP
 
 function Blackacre.YearCalendar.EnsureIdentity()
     Blackacre.CharDB = Blackacre.CharDB or BlackacreCharDB
@@ -11,7 +10,6 @@ function Blackacre.YearCalendar.EnsureIdentity()
         birthYearADP = nil,
         birthEraId = nil,
         birthPlace = "",
-        presentYearADP = Blackacre.YearCalendar.DEFAULT_PRESENT_ADP,
         calendarDisplay = "AUTO",
         longevityProfile = "auto",
         originMode = "born",
@@ -19,26 +17,24 @@ function Blackacre.YearCalendar.EnsureIdentity()
         deathYearADP = nil,
         rebirthYearADP = nil,
     }
-    local id = Blackacre.CharDB.identity
-    if id.presentYearADP == nil then
-        id.presentYearADP = Blackacre.YearCalendar.DEFAULT_PRESENT_ADP
-    end
-    -- Migrate old yearKCBase flavor into presentYearADP once
-    if id.birthYearADP == nil and Blackacre.CharDB.settings and Blackacre.CharDB.settings.yearKCBase then
-        -- old default 42 was already portal-ish flavor
-        id.presentYearADP = Blackacre.CharDB.settings.yearKCBase or id.presentYearADP
-    end
-    return id
+    return Blackacre.CharDB.identity
 end
 
 function Blackacre.YearCalendar.GetPresentADP()
     local id = Blackacre.YearCalendar.EnsureIdentity()
-    return tonumber(id.presentYearADP) or Blackacre.YearCalendar.DEFAULT_PRESENT_ADP
+    if id.presentYearFixed then
+        local pinned = tonumber(id.presentYearADP)
+        if pinned then return pinned end
+    end
+    return Blackacre.Compat.PresentADP()
 end
 
+--- A number pins this character's present year; nil returns it to the calendar.
 function Blackacre.YearCalendar.SetPresentADP(year)
     local id = Blackacre.YearCalendar.EnsureIdentity()
-    id.presentYearADP = tonumber(year) or Blackacre.YearCalendar.DEFAULT_PRESENT_ADP
+    year = tonumber(year)
+    id.presentYearADP = year
+    id.presentYearFixed = year and true or nil
 end
 
 function Blackacre.YearCalendar.GetBirthADP()
