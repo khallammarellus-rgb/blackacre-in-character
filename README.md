@@ -2,9 +2,46 @@
 
 **Blackacre: In Character** for Retail World of Warcraft. Designed to be a journal and RPG enhancing add on for WoW roleplay. This is the foundational base add on for planned extensions.
 
-**Version:** 2.0.0-dev
+**Version:** 2.5.0
 **Target:** Retail World of Warcraft (Midnight, 12.1)
 **Repo:** https://github.com/khallammarellus-rgb/blackacre-in-character · WoW Forever edition: https://github.com/khallammarellus-rgb/blackacre-in-character-forever
+
+---
+
+## What's new in 2.5.0
+
+**Journal and Quest Index**
+- Quest Index tabs: **This character** and **Warband**. Warband quests are no longer imported into a character's list; one you turn in is recorded as it happens.
+- Search the Quest Index by quest name or by words in the quest; put a phrase in "quotes" for an exact match.
+- Abandoned quests stay in the Index, marked **Started**.
+- Imported quests can be journaled on request with **Journal Quest**.
+- Repeatable quests keep their first completion, numbered tracker quests are hidden unless **Numbered** is ticked, and retired quests show as **Retired Quest**.
+- Quest text is shared across your characters, and can be swapped with other In Character players (toggle in Settings).
+- **Import earlier quests** brings in everything the game lists, with progress messages; the Index stays light however big it gets.
+- New journal pages for profession steps, specializations, friendship ranks and renown.
+- The in-game year now follows the real calendar (42 ADP in 2026, one more each 1 January); old pages keep their year.
+- New journal background.
+
+**Backups**
+- **Export Tome** backup, and importing a Tome backup now merges into your journal instead of replacing it.
+
+**Survival**
+- **Spirit Form** while dead: meters pause, and you come back hungry and thirsty.
+- Campfires warm you: **Campfire Nearby** and **Cozy Fire**.
+- Food and water tiers slow the drain, **Well Fed** holds hunger, cooked food refills it, and drinking fills thirst as you drink.
+- Climates for about 40 more zones.
+- Every character starts with Survival on, and turning it on brings the meters back.
+
+**Tour and Settings**
+- **Helper** (`/ba helper`): a full guided tour or one per part, offered once on first login.
+- Settings sections are now a list on the left, in a roomier window.
+
+**Fixes**
+- Missing game art is left out instead of drawn as a stand-in.
+- Windows always come to the front when opened or clicked.
+- No more boxes for marks the journal fonts lack; races without a kin font get Morpheus.
+- "Player not found" no longer appears after add-on messages.
+- Lighter map-pin cursor and chat filter.
 
 ---
 

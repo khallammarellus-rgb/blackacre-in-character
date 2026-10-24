@@ -1,7 +1,7 @@
 ## Interface: 120100
 ## Title: In Character
 ## Notes: Roleplay for World of Warcraft: journal, survival, beacons and bulletins.
-## Version: 2.0.0-dev
+## Version: 2.5.0
 ## Author: khallammarellus-rgb
 ## X-License: MIT
 ## IconTexture: Interface\Icons\INV_Misc_Book_09
